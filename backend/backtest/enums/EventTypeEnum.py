@@ -11,6 +11,6 @@ class EventTypeEnum(Enum):
     FILL = 3
 
 
-class EventDirectionTypeEnum(Enum):
+class DirectionTypeEnum(Enum):
     BUY = 0
     SELL = 1
