@@ -32,8 +32,9 @@ class DataHandler(metaclass=ABCMeta):
     system will be treated identically by the rest of the backtesting suite.
     """
 
-    def __init__(self, event_que: Queue[Event]):
+    def __init__(self, event_que: Queue[Event], symbol_list: List[str]):
         self.event_que: Queue[Event] = event_que
+        self.symbol_list = symbol_list
 
     @abstractmethod
     def get_latest_bar(self, symbol: str):
@@ -114,7 +115,8 @@ class HistoricCSVDataHandler(DataHandler):
     trading interface.
     """
 
-    def __init__(self, events: Queue[Event], csv_dir: str, symbol_list: List[str]):
+    def __init__(self, events_que: Queue[Event], csv_dir: str, symbol_list: List[str]):
+        super().__init__(events_que, symbol_list)
         """
         Initialises the historic data handler by requesting
         the location of the CSV files and a list of symbols.
@@ -127,7 +129,7 @@ class HistoricCSVDataHandler(DataHandler):
         csv_dir - Absolute directory path to the CSV files.
         symbol_list - A list of symbol strings.
         """
-        self.events: Queue[Event] = events
+        self.events_que: Queue[Event] = events_que
         self.csv_dir: str = csv_dir
         self.symbol_list: List[str] = symbol_list
 
@@ -255,4 +257,4 @@ class HistoricCSVDataHandler(DataHandler):
             else:
                 if bar is not None:
                     self.latest_symbol_data[s].append(bar)
-        self.events.put(MarketEvent())
+        self.events_que.put(MarketEvent())
