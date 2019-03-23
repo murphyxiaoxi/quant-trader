@@ -6,6 +6,7 @@
 from __future__ import print_function
 
 from backend.backtest.enums.EventTypeEnum import EventTypeEnum
+from backend.backtest.enums.SignalTypeEnum import SignalTypeEnum
 
 
 class Event(object):
@@ -36,7 +37,7 @@ class SignalEvent(Event):
     This is received by a Portfolio object and acted upon.
     """
 
-    def __init__(self, strategy_id: int, symbol: str, datetime: int, signal_type, strength):
+    def __init__(self, strategy_id: int, symbol: str, datetime: int, signal_type: SignalTypeEnum, strength):
         """
         Initialises the SignalEvent.
 
@@ -52,7 +53,7 @@ class SignalEvent(Event):
         self.type: EventTypeEnum = EventTypeEnum.SIGNAL
         self.symbol = symbol
         self.datetime = datetime
-        self.signal_type = signal_type
+        self.signal_type: SignalTypeEnum = signal_type
         self.strength = strength
 
 
@@ -63,7 +64,7 @@ class OrderEvent(Event):
     quantity and a direction.
     """
 
-    def __init__(self, symbol, order_type, quantity, direction):
+    def __init__(self, symbol:str, order_type, quantity, direction):
         """
         Initialises the order type, setting whether it is
         a Market order ('MKT') or Limit order ('LMT'), has

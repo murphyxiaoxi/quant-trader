@@ -2,7 +2,7 @@ from enum import Enum, unique
 
 
 @unique
-class ValTypeEnum(Enum):
+class BarValTypeEnum(Enum):
     Open = 0
     High = 1
     Low = 2
