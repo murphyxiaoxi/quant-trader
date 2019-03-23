@@ -9,3 +9,8 @@ class EventTypeEnum(Enum):
     SIGNAL = 1
     ORDER = 2
     FILL = 3
+
+
+class EventDirectionTypeEnum(Enum):
+    BUY = 0
+    SELL = 1

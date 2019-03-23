@@ -6,6 +6,7 @@
 from __future__ import print_function
 
 from backend.backtest.enums.EventTypeEnum import EventTypeEnum
+from backend.backtest.enums.OrderTypeEnum import OrderTypeEnum
 from backend.backtest.enums.SignalTypeEnum import SignalTypeEnum
 
 
@@ -64,7 +65,7 @@ class OrderEvent(Event):
     quantity and a direction.
     """
 
-    def __init__(self, symbol:str, order_type, quantity, direction):
+    def __init__(self, symbol: str, order_type: OrderTypeEnum, quantity: int, direction):
         """
         Initialises the order type, setting whether it is
         a Market order ('MKT') or Limit order ('LMT'), has
