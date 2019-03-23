@@ -21,7 +21,7 @@ def create_sharpe_ratio(returns, periods=252):
     return np.sqrt(periods) * (np.mean(returns)) / np.std(returns)
 
 
-def create_drawdowns(pnl):
+def create_draw_downs(pnl):
     """
     Calculate the largest peak-to-trough drawdown of the PnL curve
     as well as the duration of the drawdown. Requires that the
@@ -40,12 +40,12 @@ def create_drawdowns(pnl):
 
     # Create the drawdown and duration series
     idx = pnl.index
-    drawdown = pd.Series(index = idx)
-    duration = pd.Series(index = idx)
+    draw_down = pd.Series(index=idx)
+    duration = pd.Series(index=idx)
 
     # Loop over the index range
     for t in range(1, len(idx)):
-        hwm.append(max(hwm[t-1], pnl[t]))
-        drawdown[t]= (hwm[t]-pnl[t])
-        duration[t]= (0 if drawdown[t] == 0 else duration[t-1]+1)
-    return drawdown, drawdown.max(), duration.max()
+        hwm.append(max(hwm[t - 1], pnl[t]))
+        draw_down[t] = (hwm[t] - pnl[t])
+        duration[t] = (0 if draw_down[t] == 0 else duration[t - 1] + 1)
+    return draw_down, draw_down.max(), duration.max()

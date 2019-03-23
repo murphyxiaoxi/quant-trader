@@ -9,4 +9,5 @@ class BarValTypeEnum(Enum):
     Close = 3
     Volume = 4
     IO = 5
+    ADJ_CLOSE = 6
 

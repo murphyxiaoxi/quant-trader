@@ -3,17 +3,16 @@
 
 # portfolio.py
 
-from __future__ import print_function
-
 import datetime
-from math import floor
 import queue
 
-import numpy as np
 import pandas as pd
 
-from backend.backtest.event import Event, FillEvent, OrderEvent
-from backend.backtest.performance import create_sharpe_ratio, create_drawdowns
+from backend.backtest.datahandler import DataHandler
+from backend.backtest.enums import event_type_enums
+from backend.backtest.enums.bar_val_type_enums import BarValTypeEnum
+from backend.backtest.event import Event, OrderEvent, FillEvent
+from backend.backtest.performance import create_sharpe_ratio, create_draw_downs
 
 
 class Portfolio(object):
@@ -31,7 +30,8 @@ class Portfolio(object):
     portfolio total across bars.
     """
 
-    def __init__(self, bars, events: Event, start_date: str, initial_capital=100000.0):
+    def __init__(self, data_handler: DataHandler, events_que: queue.Queue[Event], start_date: datetime,
+                 initial_capital: float = 100000.0):
         """
         Initialises the portfolio with bars and an event queue.
         Also includes a starting datetime index and initial capital
@@ -43,17 +43,18 @@ class Portfolio(object):
         start_date - The start date (bar) of the portfolio.
         initial_capital - The starting capital in USD.
         """
-        self.bars = bars
-        self.events = events
-        self.symbol_list = self.bars.symbol_list
-        self.start_date = start_date
-        self.initial_capital = initial_capital
+        self.data_handler: DataHandler = data_handler
+        self.events_que: queue.Queue[Event] = events_que
+        self.symbol_list = self.data_handler.symbol_list
+        self.start_date: datetime = start_date
+        self.initial_capital: float = initial_capital
 
         self.all_positions = self.construct_all_positions()
         self.current_positions = dict((k, v) for k, v in [(s, 0) for s in self.symbol_list])
 
         self.all_holdings = self.construct_all_holdings()
         self.current_holdings = self.construct_current_holdings()
+        self.equity_curve = None
 
     def construct_all_positions(self):
         """
@@ -87,7 +88,7 @@ class Portfolio(object):
         d['total'] = self.initial_capital
         return d
 
-    def update_timeindex(self, event):
+    def update_time_index(self, event):
         """
         Adds a new record to the positions matrix for the current
         market data bar. This reflects the PREVIOUS bar, i.e. all
@@ -95,7 +96,7 @@ class Portfolio(object):
 
         Makes use of a MarketEvent from the events queue.
         """
-        latest_datetime = self.bars.get_latest_bar_datetime(self.symbol_list[0])
+        latest_datetime = self.data_handler.get_latest_bar_datetime(self.symbol_list[0])
 
         # Update positions
         # ================
@@ -119,7 +120,7 @@ class Portfolio(object):
         for s in self.symbol_list:
             # Approximation to the real value
             market_value = self.current_positions[s] * \
-                           self.bars.get_latest_bar_value(s, "adj_close")
+                           self.data_handler.get_latest_bar_value(s, "adj_close")
             dh[s] = market_value
             dh['total'] += market_value
 
@@ -130,7 +131,7 @@ class Portfolio(object):
     # FILL/POSITION HANDLING
     # ======================
 
-    def update_positions_from_fill(self, fill):
+    def update_positions_from_fill(self, fill_event: FillEvent):
         """
         Takes a Fill object and updates the position matrix to
         reflect the new position.
@@ -140,13 +141,13 @@ class Portfolio(object):
         """
         # Check whether the fill is a buy or sell
         fill_dir = 0
-        if fill.direction == 'BUY':
+        if fill_event.direction == event_type_enums.DirectionTypeEnum.BUY:
             fill_dir = 1
-        if fill.direction == 'SELL':
+        if fill_event.direction == event_type_enums.DirectionTypeEnum.SELL:
             fill_dir = -1
 
         # Update positions list with new quantities
-        self.current_positions[fill.symbol] += fill_dir * fill.quantity
+        self.current_positions[fill_event.symbol] += fill_dir * fill_event.quantity
 
     def update_holdings_from_fill(self, fill):
         """
@@ -158,14 +159,14 @@ class Portfolio(object):
         """
         # Check whether the fill is a buy or sell
         fill_dir = 0
-        if fill.direction == 'BUY':
+        if fill.direction == event_type_enums.DirectionTypeEnum.BUY:
             fill_dir = 1
-        if fill.direction == 'SELL':
+        if fill.direction == event_type_enums.DirectionTypeEnum.SELL:
             fill_dir = -1
 
         # Update holdings list with new quantities
-        fill_cost = self.bars.get_latest_bar_value(
-            fill.symbol, "adj_close"
+        fill_cost = self.data_handler.get_latest_bar_value(
+            fill.symbol, BarValTypeEnum.ADJ_CLOSE
         )
         cost = fill_dir * fill_cost * fill.quantity
         self.current_holdings[fill.symbol] += cost
@@ -219,13 +220,13 @@ class Portfolio(object):
         """
         if event.type == 'SIGNAL':
             order_event = self.generate_naive_order(event)
-            self.events.put(order_event)
+            self.events_que.put(order_event)
 
     # ========================
     # POST-BACKTEST STATISTICS
     # ========================
 
-    def create_equity_curve_dataframe(self):
+    def create_equity_curve_data_frame(self):
         """
         Creates a pandas DataFrame from the all_holdings
         list of dictionaries.
@@ -245,8 +246,8 @@ class Portfolio(object):
         pnl = self.equity_curve['equity_curve']
 
         sharpe_ratio = create_sharpe_ratio(returns, periods=252 * 60 * 6.5)
-        drawdown, max_dd, dd_duration = create_drawdowns(pnl)
-        self.equity_curve['drawdown'] = drawdown
+        draw_down, max_dd, dd_duration = create_draw_downs(pnl)
+        self.equity_curve['drawdown'] = draw_down
 
         stats = [("Total Return", "%0.2f%%" % ((total_return - 1.0) * 100.0)),
                  ("Sharpe Ratio", "%0.2f" % sharpe_ratio),

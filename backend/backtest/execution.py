@@ -2,17 +2,10 @@
 # -*- coding: utf-8 -*-
 
 # execution.py
-
-from __future__ import print_function
-
 from abc import ABCMeta, abstractmethod
 import datetime
 
-try:
-    import Queue as queue
-except ImportError:
-    import queue
-
+from backend.backtest.enums.event_type_enums import EventTypeEnum
 from backend.backtest.event import FillEvent, OrderEvent
 
 
@@ -52,7 +45,7 @@ class SimulatedExecutionHandler(ExecutionHandler):
     handler.
     """
 
-    def __init__(self, events):
+    def __init__(self, events_que):
         """
         Initialises the handler, setting the event queues
         up internally.
@@ -60,7 +53,7 @@ class SimulatedExecutionHandler(ExecutionHandler):
         Parameters:
         events - The Queue of Event objects.
         """
-        self.events = events
+        self.events_que = events_que
 
     def execute_order(self, event):
         """
@@ -70,9 +63,9 @@ class SimulatedExecutionHandler(ExecutionHandler):
         Parameters:
         event - Contains an Event object with order information.
         """
-        if event.type == 'ORDER':
+        if event.type == EventTypeEnum.ORDER:
             fill_event = FillEvent(
                 datetime.datetime.utcnow(), event.symbol,
                 'ARCA', event.quantity, event.direction, None
             )
-            self.events.put(fill_event)
+            self.events_que.put(fill_event)

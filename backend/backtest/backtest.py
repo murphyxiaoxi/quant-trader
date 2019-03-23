@@ -23,10 +23,10 @@ class BackTest(object):
             initial_capital: float,
             heartbeat: int,
             start_date: str,
-            data_handler_cls: DataHandler,
-            execution_handler_cls: ExecutionHandler,
-            portfolio_cls: Portfolio,
-            strategy_cls: Strategy
+            data_handler_cls: DataHandler.__class__,
+            execution_handler_cls: ExecutionHandler.__class__,
+            portfolio_cls: Portfolio.__class__,
+            strategy_cls: Strategy.__class__
     ):
         """
         Initialises the backtest.
@@ -47,12 +47,12 @@ class BackTest(object):
         self.heartbeat: int = heartbeat
         self.start_date: str = start_date
 
-        self.data_handler_cls: DataHandler = data_handler_cls
-        self.execution_handler_cls: ExecutionHandler = execution_handler_cls
-        self.portfolio_cls: Portfolio = portfolio_cls
-        self.strategy_cls: Strategy = strategy_cls
+        self.data_handler_cls: DataHandler.__class__ = data_handler_cls
+        self.execution_handler_cls: ExecutionHandler.__class__ = execution_handler_cls
+        self.portfolio_cls: Portfolio.__class__ = portfolio_cls
+        self.strategy_cls: Strategy.__class__ = strategy_cls
 
-        self.events = queue.Queue()
+        self.events_que = queue.Queue()
 
         self.signals = 0
         self.orders = 0
@@ -69,11 +69,11 @@ class BackTest(object):
         print(
             "Creating DataHandler, Strategy, Portfolio and ExecutionHandler"
         )
-        self.data_handler = self.data_handler_cls(self.events, self.csv_dir, self.symbol_list)
-        self.strategy = self.strategy_cls(self.data_handler, self.events)
-        self.portfolio = self.portfolio_cls(self.data_handler, self.events, self.start_date,
+        self.data_handler = self.data_handler_cls(self.events_que, self.symbol_list)
+        self.strategy = self.strategy_cls(self.data_handler, self.events_que)
+        self.portfolio = self.portfolio_cls(self.data_handler, self.events_que, self.start_date,
                                             self.initial_capital)
-        self.execution_handler = self.execution_handler_cls(self.events)
+        self.execution_handler = self.execution_handler_cls(self.events_que)
 
     def _run_backtest(self):
         """
@@ -92,14 +92,14 @@ class BackTest(object):
             # Handle the events
             while True:
                 try:
-                    event = self.events.get(False)
+                    event = self.events_que.get(False)
                 except queue.Empty:
                     break
                 else:
                     if event is not None:
                         if event.type == 'MARKET':
                             self.strategy.calculate_signals(event)
-                            self.portfolio.update_timeindex(event)
+                            self.portfolio.update_time_index(event)
 
                         elif event.type == 'SIGNAL':
                             self.signals += 1
@@ -119,7 +119,7 @@ class BackTest(object):
         """
         Outputs the strategy performance from the backtest.
         """
-        self.portfolio.create_equity_curve_dataframe()
+        self.portfolio.create_equity_curve_data_frame()
 
         print("Creating summary stats...")
         stats = self.portfolio.output_summary_stats()

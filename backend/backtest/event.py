@@ -5,9 +5,11 @@
 
 from __future__ import print_function
 
-from backend.backtest.enums.EventTypeEnum import EventTypeEnum, DirectionTypeEnum
-from backend.backtest.enums.OrderTypeEnum import OrderTypeEnum
-from backend.backtest.enums.SignalTypeEnum import SignalTypeEnum
+from datetime import datetime
+
+from backend.backtest.enums.event_type_enums import EventTypeEnum, DirectionTypeEnum
+from backend.backtest.enums.order_type_enums import OrderTypeEnum
+from backend.backtest.enums.signal_type_enums import SignalTypeEnum
 
 
 class Event(object):
@@ -38,7 +40,7 @@ class SignalEvent(Event):
     This is received by a Portfolio object and acted upon.
     """
 
-    def __init__(self, strategy_id: int, symbol: str, datetime: int, signal_type: SignalTypeEnum, strength):
+    def __init__(self, strategy_id: int, symbol: str, date_time: datetime, signal_type: SignalTypeEnum, strength):
         """
         Initialises the SignalEvent.
 
@@ -52,8 +54,8 @@ class SignalEvent(Event):
         """
         self.strategy_id: int = strategy_id
         self.type: EventTypeEnum = EventTypeEnum.SIGNAL
-        self.symbol = symbol
-        self.datetime = datetime
+        self.symbol: str = symbol
+        self.date_time: datetime = date_time
         self.signal_type: SignalTypeEnum = signal_type
         self.strength = strength
 
@@ -99,7 +101,7 @@ class OrderEvent(Event):
 
 class FillEvent(Event):
     """
-    佣金计算事件
+    下单事件
     Encapsulates the notion of a Filled Order, as returned
     from a brokerage. Stores the quantity of an instrument
     actually filled and at what price. In addition, stores
@@ -110,7 +112,7 @@ class FillEvent(Event):
     the cost.
     """
 
-    def __init__(self, timeindex, symbol:str, exchange, quantity,
+    def __init__(self, time_index: datetime, symbol: str, exchange: str, quantity,
                  direction: DirectionTypeEnum, fill_cost: float, commission=None):
         """
         Initialises the FillEvent object. Sets the symbol, exchange,
@@ -121,21 +123,21 @@ class FillEvent(Event):
         calculate it based on the trade size and Interactive
         Brokers fees.
 
-        :param timeindex: - The bar-resolution when the order was filled.
+        :param time_index: - The bar-resolution when the order was filled.
         :param symbol - The instrument which was filled.
         :param exchange - The exchange where the order was filled. 交易所
         :param quantity - The filled quantity. 数量
         :param direction - The direction of fill ('BUY' or 'SELL')
-        :param fill_cost - The holdings value in dollars. 消费
+        :param fill_cost - The holdings value in dollars. 消费金额
         :param commission - An optional commission sent from IB.
         """
         self.type: EventTypeEnum = EventTypeEnum.FILL
-        self.timeindex = timeindex
-        self.symbol = symbol
-        self.exchange = exchange
-        self.quantity = quantity
+        self.time_index: datetime = time_index
+        self.symbol: str = symbol
+        self.exchange: str = exchange
+        self.quantity: int = quantity
         self.direction: DirectionTypeEnum = direction
-        self.fill_cost = fill_cost
+        self.fill_cost: float = fill_cost
 
         # Calculate commission
         if commission is None:

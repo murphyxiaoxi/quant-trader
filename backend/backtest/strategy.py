@@ -7,6 +7,9 @@ from __future__ import print_function
 
 from abc import ABCMeta, abstractmethod
 import datetime
+
+from backend.backtest.datahandler import DataHandler
+
 try:
     import Queue as queue
 except ImportError:
@@ -15,10 +18,10 @@ except ImportError:
 import numpy as np
 import pandas as pd
 
-from backend.backtest.event import SignalEvent
+from backend.backtest.event import SignalEvent, Event
 
 
-class Strategy(object):
+class Strategy(metaclass=ABCMeta):
     """
     Strategy is an abstract base class providing an interface for
     all subsequent (inherited) strategy handling objects.
@@ -31,8 +34,9 @@ class Strategy(object):
     the Strategy object is agnostic to where the data came from,
     since it obtains the bar tuples from a queue object.
     """
-
-    __metaclass__ = ABCMeta
+    def __int__(self, data_handler:DataHandler, events_que: queue.Queue[Event]):
+        self.data_handler = data_handler
+        self.events_que = events_que
 
     @abstractmethod
     def calculate_signals(self):

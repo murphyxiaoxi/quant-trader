@@ -14,7 +14,8 @@ from typing import List
 import numpy as np
 import pandas as pd
 
-from backend.backtest.enums import BarValTypeEnum
+from backend.backtest.enums import bar_val_type_enums
+from backend.backtest.enums.bar_val_type_enums import BarValTypeEnum
 from backend.backtest.event import MarketEvent, Event
 from backend.data.stream.data_stream import DataStream
 
@@ -97,10 +98,10 @@ class HistoricMysqlDataHandler(DataHandler):
     def get_latest_bar_datetime(self, symbol: str):
         pass
 
-    def get_latest_bar_value(self, symbol: str, val_type: BarValTypeEnum):
+    def get_latest_bar_value(self, symbol: str, val_type: bar_val_type_enums):
         pass
 
-    def get_latest_bars_values(self, symbol: str, val_type: BarValTypeEnum, n: int = 1):
+    def get_latest_bars_values(self, symbol: str, val_type: bar_val_type_enums, n: int = 1):
         pass
 
     def update_bars(self):
