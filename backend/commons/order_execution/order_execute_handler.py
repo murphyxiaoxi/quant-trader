@@ -70,12 +70,20 @@ class SimulatedOrderExecuteHandler(AbstractOrderExecuteHandler):
             adj_close: float = data_handler.get_bar_value(order_event.symbol_code(), order_event.date_time(),
                                                           BarValTypeEnum.ADJ_CLOSE)
             fill_cost: float = float(order_event.quantity * adj_close)
+
+            commission: float = self._commission_from_guojin()
+
             fill_event = FillEvent(order_event.symbol_code(), datetime.utcnow(), order_event.quantity,
-                                   order_event.direction_type, fill_cost, True, '国金证券')
+                                   order_event.direction_type, fill_cost, commission, '国金证券')
             return fill_event
 
         else:
             return None
+
+    @staticmethod
+    def _commission_from_guojin(order_event: OrderEvent) -> float:
+        # todo
+        return order_event.quantity * 0.0
 
     def _fill_cost(self) -> float:
         raise NotImplementedError()

@@ -134,7 +134,7 @@ class FillEvent(AbstractEvent):
                  quantity: int,
                  direction_type: order_type_enums.DirectionTypeEnum,
                  fill_cost: float,
-                 commission: bool,
+                 commission: float,
                  exchanger: str):
         """
         Initialises the FillEvent object. Sets the symbol, exchange,
@@ -150,13 +150,14 @@ class FillEvent(AbstractEvent):
         :param quantity - The filled quantity. 数量
         :param direction_type - The direction of fill ('BUY' or 'SELL')
         :param fill_cost - The holdings value in dollars. 消费金额
+        :param commission 佣金
         :param exchanger - The exchange where the order was filled. 交易所名称
         """
         super().__init__(symbol_code, date_time, EventTypeEnum.FILL)
         self.quantity: int = quantity
         self.direction_type: order_type_enums.DirectionTypeEnum = direction_type
         self.fill_cost: float = fill_cost
-        self.commission = commission
+        self.commission: float = commission
         self.exchanger: str = exchanger
 
     def __str__(self) -> str:

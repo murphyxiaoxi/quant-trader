@@ -47,13 +47,13 @@ class Portfolio(object):
         self.initial_capital: float = initial_capital
 
         self.all_positions = self.construct_all_positions()
-        self.current_positions = dict((k, v) for k, v in [(s, 0) for s in self.symbol_code_list])
+        self.current_positions = dict([(s, 0) for s in self.symbol_code_list])
 
         self.all_holdings = self.construct_all_holdings()
         self.current_holdings = self.construct_current_holdings()
         self.equity_curve = None
 
-    def construct_all_positions(self):
+    def construct_all_positions(self) -> List[dict]:
         """
         Constructs the positions list using the start_date
         to determine when the time index will begin.
@@ -67,7 +67,7 @@ class Portfolio(object):
         Constructs the holdings list using the start_date
         to determine when the time index will begin.
         """
-        d = dict((k, v) for k, v in [(s, 0.0) for s in self.symbol_code_list])
+        d = dict([(s, 0.0) for s in self.symbol_code_list])
         d['datetime'] = self.start_date
         d['cash'] = self.initial_capital
         d['commission'] = 0.0
@@ -79,7 +79,7 @@ class Portfolio(object):
         This constructs the dictionary which will hold the instantaneous
         value of the portfolios across all symbols.
         """
-        d = dict((k, v) for k, v in [(s, 0.0) for s in self.symbol_code_list])
+        d = dict([(s, 0.0) for s in self.symbol_code_list])
         d['cash'] = self.initial_capital
         d['commission'] = 0.0
         d['total'] = self.initial_capital
@@ -97,7 +97,7 @@ class Portfolio(object):
 
         # Update positions
         # ================
-        dp = dict((k, v) for k, v in [(s, 0) for s in self.symbol_code_list])
+        dp = dict([(s, 0) for s in self.symbol_code_list])
         dp['datetime'] = latest_datetime
 
         for s in self.symbol_code_list:
