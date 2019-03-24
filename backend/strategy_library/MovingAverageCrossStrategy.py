@@ -1,7 +1,9 @@
 import numpy as np
+from pandas import DataFrame
 
 from backend.commons.abstract_strategy import AbstractStrategy
-from backend.commons.events.base import SignalEvent
+from backend.commons.enums.event_type_enums import EventTypeEnum
+from backend.commons.events.base import SignalEvent, MarketEvent
 
 
 class MovingAverageCrossAbstractStrategy(AbstractStrategy):
@@ -40,7 +42,7 @@ class MovingAverageCrossAbstractStrategy(AbstractStrategy):
             bought[s] = 'OUT'
         return bought
 
-    def calculate_signals(self, event):
+    def calculate_signals(self, features: DataFrame, market_event: MarketEvent):
         """
         Generates a new set of signals based on the MAC
         SMA with the short window crossing the long window
@@ -49,7 +51,7 @@ class MovingAverageCrossAbstractStrategy(AbstractStrategy):
         Parameters
         event - A MarketEvent object.
         """
-        if event.type == 'MARKET':
+        if market_event.event_type() == EventTypeEnum.MARKET:
             for symbol in self.symbol_list:
                 bars = self.bars.get_latest_bars_values(symbol, "close", N=self.long_window)
 

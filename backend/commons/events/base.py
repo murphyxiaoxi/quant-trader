@@ -3,7 +3,7 @@ from datetime import datetime
 
 from backend.commons.enums import order_type_enums
 from backend.commons.enums.event_type_enums import EventTypeEnum
-from backend.commons.enums.order_type_enums import OrderTypeEnum
+from backend.commons.enums.order_type_enums import OrderTypeEnum, DirectionTypeEnum
 from backend.commons.enums.signal_type_enums import SignalTypeEnum
 
 
@@ -87,7 +87,7 @@ class OrderEvent(AbstractEvent):
     """
 
     def __init__(self, symbol_code: str, date_time: datetime, order_type: OrderTypeEnum, quantity: int,
-                 direction_type: order_type_enums.DirectionTypeEnum):
+                 direction_type: DirectionTypeEnum):
         """
         Initialises the order type, setting whether it is
         a Market order ('MKT') or Limit order ('LMT'), has
@@ -117,7 +117,7 @@ class OrderEvent(AbstractEvent):
 
 class FillEvent(AbstractEvent):
     """
-    下单事件
+    填充事件
     Encapsulates the notion of a Filled Order, as returned
     from a brokerage. Stores the quantity of an instrument
     actually filled and at what price. In addition, stores
@@ -164,4 +164,3 @@ class FillEvent(AbstractEvent):
                ",fill_cost=%s, commission=%s, exchanger=%s)" \
                % (self.symbol_code(), self.date_time(), self.event_type(), self.quantity, self.direction_type,
                   self.fill_cost, self.commission, self.exchanger)
-

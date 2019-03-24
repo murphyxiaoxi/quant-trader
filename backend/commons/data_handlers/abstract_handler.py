@@ -19,7 +19,7 @@ class CommonDataHandler(metaclass=ABCMeta):
         self.cols_name: List[str] = cols_name
 
     @abstractmethod
-    def get_history_trade_date(self, symbol_code) -> List[datetime]:
+    def get_history_trade_date(self, symbol_code, min_date_time: datetime) -> List[datetime]:
         raise NotImplementedError()
 
     @abstractmethod

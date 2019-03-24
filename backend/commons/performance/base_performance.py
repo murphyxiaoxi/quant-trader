@@ -4,6 +4,7 @@
 # performance.py
 
 import numpy as np
+import pandas
 import pandas as pd
 
 
@@ -21,7 +22,7 @@ def create_sharpe_ratio(returns, periods=252):
     return np.sqrt(periods) * (np.mean(returns)) / np.std(returns)
 
 
-def create_draw_downs(pnl):
+def create_draw_downs(pnl: pandas.Series):
     """
     Calculate the largest peak-to-trough drawdown of the PnL curve
     as well as the duration of the drawdown. Requires that the

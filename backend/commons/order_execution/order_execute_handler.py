@@ -2,6 +2,8 @@ from abc import abstractmethod, ABCMeta
 from datetime import datetime
 from typing import Optional
 
+from backend.commons.data_handlers.abstract_handler import CommonDataHandler
+from backend.commons.enums.bar_val_type_enums import BarValTypeEnum
 from backend.commons.enums.event_type_enums import EventTypeEnum
 from backend.commons.events.base import FillEvent, OrderEvent
 
@@ -20,7 +22,7 @@ class AbstractOrderExecuteHandler(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def execute_order(self, order_event: OrderEvent):
+    def execute_order(self, data_handler: CommonDataHandler, order_event: OrderEvent):
         """
         Takes an Order event and executes it, producing
         a Fill event that gets placed onto the Events queue.
@@ -31,7 +33,6 @@ class AbstractOrderExecuteHandler(metaclass=ABCMeta):
         raise NotImplementedError("Should implement execute_order()")
 
 
-# todo
 class SimulatedOrderExecuteHandler(AbstractOrderExecuteHandler):
     """
     The simulated execution handler simply converts all order
@@ -52,7 +53,7 @@ class SimulatedOrderExecuteHandler(AbstractOrderExecuteHandler):
         events - The Queue of Event objects.
         """
 
-    def execute_order(self, order_event: OrderEvent) -> Optional[FillEvent]:
+    def execute_order(self, data_handler: CommonDataHandler, order_event: OrderEvent) -> Optional[FillEvent]:
         """
         Simply converts Order objects into Fill objects naively,
         i.e. without any latency, slippage or fill ratio problems.
@@ -60,12 +61,31 @@ class SimulatedOrderExecuteHandler(AbstractOrderExecuteHandler):
         Parameters:
         event - Contains an Event object with order information.
         """
+        # todo 通知交易下单
+        self._send_email(order_event)
+        self._send_notice(order_event)
+
+        # todo 处理花费
         if order_event.event_type == EventTypeEnum.ORDER:
-            fill_event = FillEvent(
-                datetime.utcnow(), order_event.symbol_code,
-                'ARCA', order_event.quantity, order_event.direction_type, None
-            )
+            adj_close: float = data_handler.get_bar_value(order_event.symbol_code(), order_event.date_time(),
+                                                          BarValTypeEnum.ADJ_CLOSE)
+            fill_cost: float = float(order_event.quantity * adj_close)
+            fill_event = FillEvent(order_event.symbol_code(), datetime.utcnow(), order_event.quantity,
+                                   order_event.direction_type, fill_cost, True, '国金证券')
             return fill_event
 
         else:
             return None
+
+    def _fill_cost(self) -> float:
+        raise NotImplementedError()
+
+    @staticmethod
+    def _send_email(order_event: OrderEvent):
+        print("交易通知:%s" % order_event)
+        # todo
+
+    @staticmethod
+    def _send_notice(order_event: OrderEvent):
+        print("交易通知:%s" % order_event)
+        # todo
