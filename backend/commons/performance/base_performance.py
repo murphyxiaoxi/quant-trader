@@ -25,7 +25,7 @@ def create_sharpe_ratio(returns, symbol_type: SymbolTypeEnum) -> float:
         return np.sqrt(periods) * (np.mean(returns)) / np.std(returns)
 
 
-def create_draw_downs(pnl: pandas.Series):
+def create_draw_downs(pnl: pandas.Series) -> (pandas.Series, float, int):
     """
     Calculate the largest peak-to-trough drawdown of the PnL curve
     as well as the duration of the drawdown. Requires that the
