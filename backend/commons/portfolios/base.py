@@ -10,9 +10,10 @@ from backend.commons.enums.order_type_enums import OrderTypeEnum
 from backend.commons.enums.signal_type_enums import SignalTypeEnum
 from backend.commons.events.base import FillEvent, OrderEvent, SignalEvent, MarketEvent
 from backend.commons.performance.base_performance import create_sharpe_ratio, create_draw_downs
-
-
 # todo 完善功能 重要
+from backend.commons.portfolios.domain import Position, Holding
+
+
 class Portfolio(object):
     """
     The Portfolio class handles the positions and market
@@ -41,49 +42,49 @@ class Portfolio(object):
         start_date - The start date (bar) of the portfolios.
         initial_capital - The starting capital in USD.
         """
-        self.data_handler: CommonDataHandler = data_handler
-        self.symbol_code_list = symbol_code_list
-        self.start_date: datetime = start_date
-        self.initial_capital: float = initial_capital
+        self._data_handler: CommonDataHandler = data_handler
+        self._symbol_code_list = symbol_code_list
+        self._start_date: datetime = start_date
+        self._initial_capital: float = initial_capital
 
-        self.all_positions = self.construct_all_positions()
-        self.current_positions = dict([(s, 0) for s in self.symbol_code_list])
+        self._all_positions: List[Position] = self._init_all_positions()
+        self._current_positions: Position = self._init_current_positions()
 
-        self.all_holdings = self.construct_all_holdings()
-        self.current_holdings = self.construct_current_holdings()
-        self.equity_curve = None
+        self._all_holdings: List[Holding] = self._init_all_holdings()
+        self._current_holdings: Holding = self._init_current_holdings()
+        self._equity_curve = None
 
-    def construct_all_positions(self) -> List[dict]:
+    def _init_all_positions(self) -> List[Position]:
         """
-        Constructs the positions list using the start_date
-        to determine when the time index will begin.
-        """
-        d = dict((k, v) for k, v in [(s, 0) for s in self.symbol_code_list])
-        d['datetime'] = self.start_date
-        return [d]
+                Constructs the positions list using the start_date
+                to determine when the time index will begin.
+                """
+        d = dict([(s, 0) for s in self._symbol_code_list])
+        return [Position(self._start_date, d)]
 
-    def construct_all_holdings(self):
+    def _init_current_positions(self) -> Position:
+        """
+                Constructs the positions list using the start_date
+                to determine when the time index will begin.
+                """
+        d = dict([(s, 0) for s in self._symbol_code_list])
+        return Position(self._start_date, d)
+
+    def _init_all_holdings(self) -> List[Holding]:
         """
         Constructs the holdings list using the start_date
         to determine when the time index will begin.
         """
-        d = dict([(s, 0.0) for s in self.symbol_code_list])
-        d['datetime'] = self.start_date
-        d['cash'] = self.initial_capital
-        d['commission'] = 0.0
-        d['total'] = self.initial_capital
-        return [d]
+        d = dict([(s, 0.0) for s in self._symbol_code_list])
+        return [Holding(self._start_date, self._initial_capital, 0.0, self._initial_capital, d)]
 
-    def construct_current_holdings(self):
+    def _init_current_holdings(self) -> Holding:
         """
-        This constructs the dictionary which will hold the instantaneous
-        value of the portfolios across all symbols.
+        Constructs the holdings list using the start_date
+        to determine when the time index will begin.
         """
-        d = dict([(s, 0.0) for s in self.symbol_code_list])
-        d['cash'] = self.initial_capital
-        d['commission'] = 0.0
-        d['total'] = self.initial_capital
-        return d
+        d = dict([(s, 0.0) for s in self._symbol_code_list])
+        return Holding(self._start_date, self._initial_capital, 0.0, self._initial_capital, d)
 
     def update_time_index_for_market_event(self, market_event: MarketEvent):
         """
@@ -97,32 +98,32 @@ class Portfolio(object):
 
         # Update positions
         # ================
-        dp = dict([(s, 0) for s in self.symbol_code_list])
+        dp = dict([(s, 0) for s in self._symbol_code_list])
         dp['datetime'] = latest_datetime
 
-        for s in self.symbol_code_list:
-            dp[s] = self.current_positions[s]
+        for s in self._symbol_code_list:
+            dp[s] = self._current_positions[s]
 
         # Append the current positions
-        self.all_positions.append(dp)
+        self._all_positions.append(dp)
 
         # Update holdings
         # ===============
-        dh = dict((k, v) for k, v in [(s, 0) for s in self.symbol_code_list])
+        dh = dict((k, v) for k, v in [(s, 0) for s in self._symbol_code_list])
         dh['datetime'] = latest_datetime
-        dh['cash'] = self.current_holdings['cash']
-        dh['commission'] = self.current_holdings['commission']
-        dh['total'] = self.current_holdings['cash']
+        dh['cash'] = self._current_holdings['cash']
+        dh['commission'] = self._current_holdings['commission']
+        dh['total'] = self._current_holdings['cash']
 
-        for s in self.symbol_code_list:
+        for s in self._symbol_code_list:
             # Approximation to the real value
-            market_value = self.current_positions[s] * \
-                           self.data_handler.get_bar_value(s, bar_val_type_enums.BarValTypeEnum.ADJ_CLOSE)
+            market_value = self._current_positions[s] * \
+                           self._data_handler.get_bar_value(s, bar_val_type_enums.BarValTypeEnum.ADJ_CLOSE)
             dh[s] = market_value
             dh['total'] += market_value
 
         # Append the current holdings
-        self.all_holdings.append(dh)
+        self._all_holdings.append(dh)
 
     # ======================
     # FILL/POSITION HANDLING
@@ -144,7 +145,7 @@ class Portfolio(object):
             fill_dir = -1
 
         # Update positions list with new quantities
-        self.current_positions[fill_event.symbol_code] += fill_dir * fill_event.quantity
+        self._current_positions[fill_event.symbol_code()] += fill_dir * fill_event.quantity
 
     def update_holdings_from_fill(self, fill_event: FillEvent):
         """
@@ -162,14 +163,14 @@ class Portfolio(object):
             fill_dir = -1
 
         # Update holdings list with new quantities
-        fill_cost = self.data_handler.get_bar_value(
+        fill_cost = self._data_handler.get_bar_value(
             fill_event.symbol_code, bar_val_type_enums.BarValTypeEnum.ADJ_CLOSE
         )
         cost = fill_dir * fill_cost * fill_event.quantity
-        self.current_holdings[fill_event.symbol_code] += cost
-        self.current_holdings['commission'] += fill_event.commission
-        self.current_holdings['cash'] -= (cost + fill_event.commission)
-        self.current_holdings['total'] -= (cost + fill_event.commission)
+        self._current_holdings[fill_event.symbol_code] += cost
+        self._current_holdings['commission'] += fill_event.commission
+        self._current_holdings['cash'] -= (cost + fill_event.commission)
+        self._current_holdings['total'] -= (cost + fill_event.commission)
 
     def update_fill(self, fill_event: FillEvent):
         """
@@ -196,7 +197,7 @@ class Portfolio(object):
         strength = signal_event.strength
 
         mkt_quantity = 100
-        cur_quantity = self.current_positions[symbol_code]
+        cur_quantity = self._current_positions[symbol_code]
         order_type = OrderTypeEnum.MARKET
 
         if signal_type == SignalTypeEnum.LONG and cur_quantity == 0:
@@ -230,28 +231,28 @@ class Portfolio(object):
         Creates a pandas DataFrame from the all_holdings
         list of dictionaries.
         """
-        curve = pd.DataFrame(self.all_holdings)
+        curve = pd.DataFrame(self._all_holdings)
         curve.set_index('datetime', inplace=True)
         curve['returns'] = curve['total'].pct_change()
         curve['equity_curve'] = (1.0 + curve['returns']).cumprod()
-        self.equity_curve = curve
+        self._equity_curve = curve
 
     def output_summary_stats(self):
         """
         Creates a list of summary statistics for the portfolios.
         """
-        total_return = self.equity_curve['equity_curve'][-1]
-        returns = self.equity_curve['returns']
-        pnl = self.equity_curve['equity_curve']
+        total_return = self._equity_curve['equity_curve'][-1]
+        returns = self._equity_curve['returns']
+        pnl = self._equity_curve['equity_curve']
 
         sharpe_ratio = create_sharpe_ratio(returns, periods=252 * 60 * 6.5)
         draw_down, max_dd, dd_duration = create_draw_downs(pnl)
-        self.equity_curve['drawdown'] = draw_down
+        self._equity_curve['drawdown'] = draw_down
 
         stats = [("Total Return", "%0.2f%%" % ((total_return - 1.0) * 100.0)),
                  ("Sharpe Ratio", "%0.2f" % sharpe_ratio),
                  ("Max Drawdown", "%0.2f%%" % (max_dd * 100.0)),
                  ("Drawdown Duration", "%d" % dd_duration)]
 
-        self.equity_curve.to_csv('equity.csv')
+        self._equity_curve.to_csv('equity.csv')
         return stats

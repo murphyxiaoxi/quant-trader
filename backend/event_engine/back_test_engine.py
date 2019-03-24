@@ -159,7 +159,7 @@ class BackTestEngine(object):
         stats = self._portfolio.output_summary_stats()
 
         print("Creating equity curve...")
-        print(self._portfolio.equity_curve.tail(10))
+        print(self._portfolio._equity_curve.tail(10))
         print(stats)
 
         print("Signals: %s" % self._signals)
