@@ -1,9 +1,16 @@
 import queue
 from datetime import datetime
 
-from backend.data_handlers.common_handler import CommonDataHandler
+from backend.data_handlers import CommonDataHandler
+from backend.enums import event_type_enums
 from backend.enums.bar_val_type_enums import BarValTypeEnum
-from backend.events.base_event import Event, FillEvent
+
+from backend.enums.order_type_enums import OrderTypeEnum
+from backend.enums.signal_type_enums import SignalTypeEnum
+from backend.events import OrderEvent, Event, FillEvent
+from backend.performance.base_performance import create_sharpe_ratio, create_draw_downs
+
+import pandas as pd
 
 
 class Portfolio(object):
@@ -194,14 +201,14 @@ class Portfolio(object):
         order_type = OrderTypeEnum.MARKET
 
         if direction == SignalTypeEnum.LONG and cur_quantity == 0:
-            order = OrderEvent(symbol, order_type, mkt_quantity, DirectionTypeEnum.BUY)
+            order = OrderEvent(symbol, order_type, mkt_quantity, event_type_enums.DirectionTypeEnum.BUY)
         if direction == SignalTypeEnum.SHORT and cur_quantity == 0:
-            order = OrderEvent(symbol, order_type, mkt_quantity, DirectionTypeEnum.SELL)
+            order = OrderEvent(symbol, order_type, mkt_quantity, event_type_enums.DirectionTypeEnum.SELL)
 
         if direction == SignalTypeEnum.EXIT and cur_quantity > 0:
-            order = OrderEvent(symbol, order_type, abs(cur_quantity), DirectionTypeEnum.SELL)
+            order = OrderEvent(symbol, order_type, abs(cur_quantity), event_type_enums.DirectionTypeEnum.SELL)
         if direction == SignalTypeEnum.EXIT and cur_quantity < 0:
-            order = OrderEvent(symbol, order_type, abs(cur_quantity), DirectionTypeEnum.BUY)
+            order = OrderEvent(symbol, order_type, abs(cur_quantity), event_type_enums.DirectionTypeEnum.BUY)
         return order
 
     def update_signal(self, event):
