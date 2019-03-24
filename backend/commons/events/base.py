@@ -1,3 +1,4 @@
+from abc import ABCMeta
 from datetime import datetime
 from backend.commons.enums import order_type_enums
 from backend.commons.enums.event_type_enums import EventTypeEnum
@@ -5,7 +6,7 @@ from backend.commons.enums.order_type_enums import OrderTypeEnum
 from backend.commons.enums.signal_type_enums import SignalTypeEnum
 
 
-class Event(object):
+class AbstractEvent(metaclass=ABCMeta):
     """
     Event is base class providing an interface for all subsequent
     (inherited) events, that will trigger further events in the
@@ -13,10 +14,13 @@ class Event(object):
     """
 
     def __init__(self, event_type: EventTypeEnum):
-        self.event_type = event_type
+        self._event_type = event_type
+
+    def event_type(self):
+        return self._event_type
 
 
-class MarketEvent(Event):
+class MarketEvent(AbstractEvent):
     """
     Handles the event of receiving a new market update with
     corresponding bars.
@@ -29,7 +33,7 @@ class MarketEvent(Event):
         super().__init__(EventTypeEnum.MARKET)
 
 
-class SignalEvent(Event):
+class SignalEvent(AbstractEvent):
     """
     Handles the event of sending a Signal from a Strategy object.
     This is received by a Portfolio object and acted upon.
@@ -55,7 +59,7 @@ class SignalEvent(Event):
         self.strength = strength
 
 
-class OrderEvent(Event):
+class OrderEvent(AbstractEvent):
     """
     Handles the event of sending an Order to an execution system.
     The order contains a symbol (e.g. GOOG), a type (market or limit),
@@ -63,7 +67,7 @@ class OrderEvent(Event):
     """
 
     def __init__(self, symbol: str, order_type: OrderTypeEnum, quantity: int,
-                 direction: order_type_enums.DirectionTypeEnum):
+                 direction_type: order_type_enums.DirectionTypeEnum):
         """
         Initialises the order type, setting whether it is
         a Market order ('MKT') or Limit order ('LMT'), has
@@ -83,19 +87,17 @@ class OrderEvent(Event):
         self.symbol: str = symbol
         self.order_type: OrderTypeEnum = order_type
         self.quantity: int = quantity
-        self.direction: order_type_enums.DirectionTypeEnum = direction
+        self.direction_type: order_type_enums.DirectionTypeEnum = direction_type
 
     def print_order(self):
         """
         Outputs the values within the Order.
         """
-        print(
-            "Order: Symbol=%s, Type=%s, Quantity=%s, Direction=%s" %
-            (self.symbol, self.order_type, self.quantity, self.direction)
-        )
+        print("Order: Symbol=%s, Type=%s, Quantity=%s, Direction=%s",
+              self.symbol, self.order_type, self.quantity, self.direction_type)
 
 
-class FillEvent(Event):
+class FillEvent(AbstractEvent):
     """
     下单事件
     Encapsulates the notion of a Filled Order, as returned
@@ -109,7 +111,7 @@ class FillEvent(Event):
     """
 
     def __init__(self, time_index: datetime, symbol: str, exchange: str, quantity,
-                 direction: order_type_enums.DirectionTypeEnum, fill_cost: float):
+                 direction_type: order_type_enums.DirectionTypeEnum, fill_cost: float):
         """
         Initialises the FillEvent object. Sets the symbol, exchange,
         quantity, direction, cost of fill and an optional
@@ -123,7 +125,7 @@ class FillEvent(Event):
         :param symbol - The instrument which was filled.
         :param exchange - The exchange where the order was filled. 交易所
         :param quantity - The filled quantity. 数量
-        :param direction - The direction of fill ('BUY' or 'SELL')
+        :param direction_type - The direction of fill ('BUY' or 'SELL')
         :param fill_cost - The holdings value in dollars. 消费金额
         """
         super().__init__(EventTypeEnum.FILL)
@@ -131,5 +133,5 @@ class FillEvent(Event):
         self.symbol: str = symbol
         self.exchange: str = exchange
         self.quantity: int = quantity
-        self.direction: order_type_enums.DirectionTypeEnum = direction
+        self.direction_type: order_type_enums.DirectionTypeEnum = direction_type
         self.fill_cost: float = fill_cost

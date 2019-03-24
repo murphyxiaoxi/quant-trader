@@ -5,7 +5,7 @@ from pandas import DataFrame
 
 
 class CommonDataHandler(metaclass=ABCMeta):
-    def __init__(self, data_frame: DataFrame, cols_name: List[str], symbol_list: List[str]):
+    def __init__(self, data_frame: DataFrame, cols_name: List[str]):
         """
 
         :param data_frame: pandas dataFrame
@@ -14,8 +14,7 @@ class CommonDataHandler(metaclass=ABCMeta):
         """
         self.data_frame = data_frame
         self.cols_name: List[str] = cols_name
-        self.symbol_list = symbol_list
 
     @abstractmethod
-    def get_latest_bar(self, date: str):
+    def get_latest_bar(self, symbol_code: str, date: str) -> DataFrame:
         pass

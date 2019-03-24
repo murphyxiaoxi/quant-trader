@@ -7,7 +7,7 @@ from backend.commons.data_handlers.abstract_handler import CommonDataHandler
 from backend.commons.enums import order_type_enums, bar_val_type_enums
 from backend.commons.enums.order_type_enums import OrderTypeEnum
 from backend.commons.enums.signal_type_enums import SignalTypeEnum
-from backend.commons.events.base import Event, FillEvent, OrderEvent
+from backend.commons.events.base import AbstractEvent, FillEvent, OrderEvent
 from backend.commons.performance.base_performance import create_sharpe_ratio, create_draw_downs
 
 
@@ -26,7 +26,7 @@ class Portfolio(object):
     portfolios total across bars.
     """
 
-    def __init__(self, data_handler: CommonDataHandler, events_que: queue.Queue[Event], start_date: datetime,
+    def __init__(self, data_handler: CommonDataHandler, events_que: queue.Queue[AbstractEvent], start_date: datetime,
                  initial_capital: float = 100000.0):
         """
         Initialises the portfolios with bars and an event queue.
@@ -40,7 +40,7 @@ class Portfolio(object):
         initial_capital - The starting capital in USD.
         """
         self.data_handler: CommonDataHandler = data_handler
-        self.events_que: queue.Queue[Event] = events_que
+        self.events_que: queue.Queue[AbstractEvent] = events_que
         self.symbol_list = self.data_handler.symbol_list
         self.start_date: datetime = start_date
         self.initial_capital: float = initial_capital
@@ -137,9 +137,9 @@ class Portfolio(object):
         """
         # Check whether the fill is a buy or sell
         fill_dir = 0
-        if fill_event.direction == order_type_enums.DirectionTypeEnum.BUY:
+        if fill_event.direction_type == order_type_enums.DirectionTypeEnum.BUY:
             fill_dir = 1
-        if fill_event.direction == order_type_enums.DirectionTypeEnum.SELL:
+        if fill_event.direction_type == order_type_enums.DirectionTypeEnum.SELL:
             fill_dir = -1
 
         # Update positions list with new quantities

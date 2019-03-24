@@ -2,7 +2,8 @@ import queue
 from abc import ABCMeta, abstractmethod
 
 from backend.commons.data_handlers.abstract_handler import CommonDataHandler
-from backend.commons.events.base import Event, MarketEvent
+from backend.commons.enums.event_type_enums import EventTypeEnum
+from backend.commons.events.base import AbstractEvent, MarketEvent
 
 
 class AbstractStrategy(metaclass=ABCMeta):
@@ -19,13 +20,15 @@ class AbstractStrategy(metaclass=ABCMeta):
     since it obtains the bar tuples from a queue object.
     """
 
-    def __int__(self, data_handler: CommonDataHandler, events_que: queue.Queue[Event]):
+    def __int__(self, data_handler: CommonDataHandler):
         self.data_handler = data_handler
-        self.events_que = events_que
 
     @abstractmethod
-    def calculate_signals(self, market_event: MarketEvent):
+    def calculate_signals(self, global_events_queue: queue.Queue[AbstractEvent], market_event: MarketEvent):
         """
         Provides the mechanisms to calculate the list of signals.
         """
-        raise NotImplementedError("Should implement calculate_signals()")
+        if market_event.event_type() != EventTypeEnum.MARKET:
+            return
+
+        raise NotImplementedError()

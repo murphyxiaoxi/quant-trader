@@ -1,7 +1,9 @@
 from abc import abstractmethod, ABCMeta
 from datetime import datetime
+from queue import Queue
+
 from backend.commons.enums.event_type_enums import EventTypeEnum
-from backend.commons.events.base import FillEvent
+from backend.commons.events.base import FillEvent, AbstractEvent, OrderEvent
 
 
 class AbstractOrderExecuteHandler(metaclass=ABCMeta):
@@ -18,7 +20,7 @@ class AbstractOrderExecuteHandler(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def execute_order(self, event):
+    def execute_order(self, events_queue: Queue[AbstractEvent], event):
         """
         Takes an Order event and executes it, producing
         a Fill event that gets placed onto the Events queue.
@@ -30,7 +32,7 @@ class AbstractOrderExecuteHandler(metaclass=ABCMeta):
 
 
 # todo
-class SimulatedAbstractOrderExecuteHandler(AbstractOrderExecuteHandler):
+class SimulatedOrderExecuteHandler(AbstractOrderExecuteHandler):
     """
     The simulated execution handler simply converts all order
     objects into their equivalent fill objects automatically
@@ -41,7 +43,7 @@ class SimulatedAbstractOrderExecuteHandler(AbstractOrderExecuteHandler):
     handler.
     """
 
-    def __init__(self, events_que):
+    def __init__(self):
         """
         Initialises the handler, setting the event queues
         up internally.
@@ -49,9 +51,8 @@ class SimulatedAbstractOrderExecuteHandler(AbstractOrderExecuteHandler):
         Parameters:
         events - The Queue of Event objects.
         """
-        self.events_que = events_que
 
-    def execute_order(self, event):
+    def execute_order(self, events_queue: Queue[AbstractEvent], event: AbstractEvent):
         """
         Simply converts Order objects into Fill objects naively,
         i.e. without any latency, slippage or fill ratio problems.
@@ -59,7 +60,7 @@ class SimulatedAbstractOrderExecuteHandler(AbstractOrderExecuteHandler):
         Parameters:
         event - Contains an Event object with order information.
         """
-        if event.type == EventTypeEnum.ORDER:
+        if event.event_type == EventTypeEnum.ORDER:
             fill_event = FillEvent(
                 datetime.utcnow(), event.symbol,
                 'ARCA', event.quantity, event.direction, None
