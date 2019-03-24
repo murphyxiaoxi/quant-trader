@@ -125,6 +125,7 @@ class BackTestEngine(object):
                             = self._previous_trade_date_index[current_event.symbol_code()] + 1
 
             time.sleep(self._heartbeat_time)
+            self._output_performance()
 
     def _process_event(self, event: AbstractEvent):
         if event.event_type() == EventTypeEnum.MARKET:
@@ -177,4 +178,3 @@ class BackTestEngine(object):
         """
         self._init_first_market_events()
         self._run_back_test()
-        self._output_performance()
