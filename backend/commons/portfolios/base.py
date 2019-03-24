@@ -9,6 +9,7 @@ from backend.commons.enums import order_type_enums, bar_val_type_enums
 from backend.commons.enums.event_type_enums import EventTypeEnum
 from backend.commons.enums.order_type_enums import OrderTypeEnum
 from backend.commons.enums.signal_type_enums import SignalTypeEnum
+from backend.commons.enums.symbol_type import SymbolTypeEnum
 from backend.commons.events.base import FillEvent, OrderEvent, SignalEvent, MarketEvent
 from backend.commons.performance import StatisticSummary, EquityCurve
 from backend.commons.performance.base_performance import create_sharpe_ratio, create_draw_downs
@@ -236,7 +237,7 @@ class Portfolio(object):
     # ========================
     # POST-BACKTEST STATISTICS
     # ========================
-    def statistic_summary(self) -> (StatisticSummary, EquityCurve):
+    def statistic_summary(self, symbol_type: SymbolTypeEnum) -> (StatisticSummary, EquityCurve):
         """
         Creates a list of summary statistics for the portfolios.
         """
@@ -246,7 +247,7 @@ class Portfolio(object):
         returns = self._equity_curve['returns']
         pnl = self._equity_curve['equity_curve']
 
-        sharpe_ratio = create_sharpe_ratio(returns, periods=252 * 60 * 6.5)
+        sharpe_ratio = create_sharpe_ratio(returns, symbol_type)
         draw_down, max_drawn_down, drawn_down_duration = create_draw_downs(pnl)
         self._equity_curve['draw_down'] = draw_down
 

@@ -39,7 +39,7 @@ class BackTestEngine(object):
         :param strategy: 
         """
         self._back_test_name = back_test_name
-        self._period_type: SymbolTypeEnum = symbol_type
+        self._symbol_type: SymbolTypeEnum = symbol_type
         self._symbol_code_list: List[str] = symbol_code_list
         self._initial_capital: float = initial_capital
         self._start_date: datetime = start_date
@@ -160,7 +160,7 @@ class BackTestEngine(object):
         """
         Outputs the strategy performance from the backtest.
         """
-        statistic_summary, equity_curve = self._portfolio.statistic_summary()
+        statistic_summary, equity_curve = self._portfolio.statistic_summary(self._symbol_type)
 
         print("Creating summary stats...")
         print(statistic_summary)
