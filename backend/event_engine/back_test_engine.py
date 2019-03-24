@@ -27,8 +27,7 @@ class BackTestEngine(object):
     """
 
     def __init__(self, back_test_name, symbol_type: SymbolTypeEnum, symbol_code_list: List[str], initial_capital: float,
-                 start_date: datetime,
-                 data_handler: CommonDataHandler, strategy: AbstractStrategy):
+                 start_date: datetime, data_handler: CommonDataHandler, strategy: AbstractStrategy):
         """
         :param back_test_name
         :param symbol_type
