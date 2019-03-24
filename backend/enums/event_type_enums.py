@@ -5,12 +5,14 @@ class EventTypeEnum(Enum):
     """
     事件类型枚举
     """
-    MARKET = 0
-    SIGNAL = 1
-    ORDER = 2
-    FILL = 3
+    MARKET = "MARKET"
+    SIGNAL = "SIGNAL"
+    ORDER = "ORDER"
+    FILL = "FILL"
 
 
 class DirectionTypeEnum(Enum):
-    BUY = 0
-    SELL = 1
+    BUY = "BUY"
+    SELL = "SELL"
+
+

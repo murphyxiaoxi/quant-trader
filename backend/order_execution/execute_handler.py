@@ -1,12 +1,8 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
+from abc import abstractmethod, ABCMeta
+from datetime import datetime
 
-# execution.py
-from abc import ABCMeta, abstractmethod
-import datetime
-
-from backend.backtest.enums.event_type_enums import EventTypeEnum
-from backend.backtest.event import FillEvent, OrderEvent
+from backend.enums import EventTypeEnum
+from backend.events.base_event import FillEvent
 
 
 class ExecutionHandler(metaclass=ABCMeta):
@@ -65,7 +61,7 @@ class SimulatedExecutionHandler(ExecutionHandler):
         """
         if event.type == EventTypeEnum.ORDER:
             fill_event = FillEvent(
-                datetime.datetime.utcnow(), event.symbol,
+                datetime.utcnow(), event.symbol,
                 'ARCA', event.quantity, event.direction, None
             )
             self.events_que.put(fill_event)

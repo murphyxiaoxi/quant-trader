@@ -1,24 +1,8 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-
-# strategy.py
-
-from __future__ import print_function
-
+import queue
 from abc import ABCMeta, abstractmethod
-import datetime
 
-from backend.backtest.datahandler import DataHandler
-
-try:
-    import Queue as queue
-except ImportError:
-    import queue
-
-import numpy as np
-import pandas as pd
-
-from backend.backtest.event import SignalEvent, Event
+from backend.data_handlers.common_handler import CommonDataHandler
+from backend.events.base_event import Event, MarketEvent
 
 
 class Strategy(metaclass=ABCMeta):
@@ -34,12 +18,13 @@ class Strategy(metaclass=ABCMeta):
     the Strategy object is agnostic to where the data came from,
     since it obtains the bar tuples from a queue object.
     """
-    def __int__(self, data_handler:DataHandler, events_que: queue.Queue[Event]):
+
+    def __int__(self, data_handler: CommonDataHandler, events_que: queue.Queue[Event]):
         self.data_handler = data_handler
         self.events_que = events_que
 
     @abstractmethod
-    def calculate_signals(self):
+    def calculate_signals(self, market_event: MarketEvent):
         """
         Provides the mechanisms to calculate the list of signals.
         """

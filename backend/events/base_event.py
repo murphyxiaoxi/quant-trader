@@ -1,15 +1,11 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# event.py
-
-from __future__ import print_function
-
 from datetime import datetime
 
-from backend.backtest.enums.event_type_enums import EventTypeEnum, DirectionTypeEnum
-from backend.backtest.enums.order_type_enums import OrderTypeEnum
-from backend.backtest.enums.signal_type_enums import SignalTypeEnum
+from backend.enums import EventTypeEnum, DirectionTypeEnum
+from backend.enums import OrderTypeEnum
+from backend.enums import SignalTypeEnum
 
 
 class Event(object):
@@ -18,7 +14,9 @@ class Event(object):
     (inherited) events, that will trigger further events in the
     trading infrastructure.
     """
-    pass
+
+    def __init__(self, event_type: EventTypeEnum):
+        self.event_type = event_type
 
 
 class MarketEvent(Event):
@@ -31,7 +29,7 @@ class MarketEvent(Event):
         """
         Initialises the MarketEvent.
         """
-        self.type: EventTypeEnum = EventTypeEnum.MARKET
+        super().__init__(EventTypeEnum.MARKET)
 
 
 class SignalEvent(Event):
@@ -52,8 +50,8 @@ class SignalEvent(Event):
         strength - An adjustment factor "suggestion" used to scale
             quantity at the portfolio level. Useful for pairs strategies.
         """
+        super().__init__(EventTypeEnum.SIGNAL)
         self.strategy_id: int = strategy_id
-        self.type: EventTypeEnum = EventTypeEnum.SIGNAL
         self.symbol: str = symbol
         self.date_time: datetime = date_time
         self.signal_type: SignalTypeEnum = signal_type
@@ -83,7 +81,7 @@ class OrderEvent(Event):
         quantity - Non-negative integer for quantity.
         direction - 'BUY' or 'SELL' for long or short.
         """
-        self.type: EventTypeEnum = EventTypeEnum.SIGNAL
+        super().__init__(EventTypeEnum.ORDER)
         self.symbol: str = symbol
         self.order_type: OrderTypeEnum = order_type
         self.quantity: int = quantity
@@ -131,7 +129,7 @@ class FillEvent(Event):
         :param fill_cost - The holdings value in dollars. 消费金额
         :param commission - An optional commission sent from IB.
         """
-        self.type: EventTypeEnum = EventTypeEnum.FILL
+        super().__init__(EventTypeEnum.FILL)
         self.time_index: datetime = time_index
         self.symbol: str = symbol
         self.exchange: str = exchange

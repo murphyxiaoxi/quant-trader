@@ -1,18 +1,9 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-
-# portfolio.py
-
-import datetime
 import queue
+from datetime import datetime
 
-import pandas as pd
-
-from backend.backtest.datahandler import DataHandler
-from backend.backtest.enums import event_type_enums
-from backend.backtest.enums.bar_val_type_enums import BarValTypeEnum
-from backend.backtest.event import Event, OrderEvent, FillEvent
-from backend.backtest.performance import create_sharpe_ratio, create_draw_downs
+from backend.data_handlers.common_handler import CommonDataHandler
+from backend.enums.bar_val_type_enums import BarValTypeEnum
+from backend.events.base_event import Event, FillEvent
 
 
 class Portfolio(object):
@@ -30,7 +21,7 @@ class Portfolio(object):
     portfolio total across bars.
     """
 
-    def __init__(self, data_handler: DataHandler, events_que: queue.Queue[Event], start_date: datetime,
+    def __init__(self, data_handler: CommonDataHandler, events_que: queue.Queue[Event], start_date: datetime,
                  initial_capital: float = 100000.0):
         """
         Initialises the portfolio with bars and an event queue.
@@ -43,7 +34,7 @@ class Portfolio(object):
         start_date - The start date (bar) of the portfolio.
         initial_capital - The starting capital in USD.
         """
-        self.data_handler: DataHandler = data_handler
+        self.data_handler: CommonDataHandler = data_handler
         self.events_que: queue.Queue[Event] = events_que
         self.symbol_list = self.data_handler.symbol_list
         self.start_date: datetime = start_date
@@ -120,7 +111,7 @@ class Portfolio(object):
         for s in self.symbol_list:
             # Approximation to the real value
             market_value = self.current_positions[s] * \
-                           self.data_handler.get_latest_bar_value(s, "adj_close")
+                           self.data_handler.get_latest_bar_value(s, BarValTypeEnum.ADJ_CLOSE)
             dh[s] = market_value
             dh['total'] += market_value
 
@@ -200,17 +191,17 @@ class Portfolio(object):
 
         mkt_quantity = 100
         cur_quantity = self.current_positions[symbol]
-        order_type = 'MKT'
+        order_type = OrderTypeEnum.MARKET
 
-        if direction == 'LONG' and cur_quantity == 0:
-            order = OrderEvent(symbol, order_type, mkt_quantity, 'BUY')
-        if direction == 'SHORT' and cur_quantity == 0:
-            order = OrderEvent(symbol, order_type, mkt_quantity, 'SELL')
+        if direction == SignalTypeEnum.LONG and cur_quantity == 0:
+            order = OrderEvent(symbol, order_type, mkt_quantity, DirectionTypeEnum.BUY)
+        if direction == SignalTypeEnum.SHORT and cur_quantity == 0:
+            order = OrderEvent(symbol, order_type, mkt_quantity, DirectionTypeEnum.SELL)
 
-        if direction == 'EXIT' and cur_quantity > 0:
-            order = OrderEvent(symbol, order_type, abs(cur_quantity), 'SELL')
-        if direction == 'EXIT' and cur_quantity < 0:
-            order = OrderEvent(symbol, order_type, abs(cur_quantity), 'BUY')
+        if direction == SignalTypeEnum.EXIT and cur_quantity > 0:
+            order = OrderEvent(symbol, order_type, abs(cur_quantity), DirectionTypeEnum.SELL)
+        if direction == SignalTypeEnum.EXIT and cur_quantity < 0:
+            order = OrderEvent(symbol, order_type, abs(cur_quantity), DirectionTypeEnum.BUY)
         return order
 
     def update_signal(self, event):
