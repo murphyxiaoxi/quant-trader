@@ -1,8 +1,8 @@
 import queue
 from abc import ABCMeta, abstractmethod
 
-from backend.data_handlers.common_handler import CommonDataHandler
-from backend.events.base_event import Event, MarketEvent
+from backend.data_handlers import CommonDataHandler
+from backend.events import Event, MarketEvent
 
 
 class Strategy(metaclass=ABCMeta):

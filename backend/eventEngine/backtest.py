@@ -120,7 +120,7 @@ class BackTestEngine(object):
 
     def simulate_trading(self):
         """
-        Simulates the backtest and outputs portfolio performance.
+        Simulates the backtest and outputs portfolios performance.
         """
         self._run_back_test()
         self._output_performance()

@@ -2,7 +2,7 @@ from typing import List
 
 from pandas import DataFrame
 
-from backend.data_handlers.common_handler import CommonDataHandler
+from backend.data_handlers.abstract_handler import CommonDataHandler
 
 
 class BackTestDataHandler(CommonDataHandler):

@@ -25,20 +25,20 @@ class Portfolio(object):
     The holdings DataFrame stores the cash and total market
     holdings value of each symbol for a particular
     time-index, as well as the percentage change in
-    portfolio total across bars.
+    portfolios total across bars.
     """
 
     def __init__(self, data_handler: CommonDataHandler, events_que: queue.Queue[Event], start_date: datetime,
                  initial_capital: float = 100000.0):
         """
-        Initialises the portfolio with bars and an event queue.
+        Initialises the portfolios with bars and an event queue.
         Also includes a starting datetime index and initial capital
         (USD unless otherwise stated).
 
         Parameters:
         bars - The DataHandler object with current market data.
         events - The Event Queue object.
-        start_date - The start date (bar) of the portfolio.
+        start_date - The start date (bar) of the portfolios.
         initial_capital - The starting capital in USD.
         """
         self.data_handler: CommonDataHandler = data_handler
@@ -78,7 +78,7 @@ class Portfolio(object):
     def construct_current_holdings(self):
         """
         This constructs the dictionary which will hold the instantaneous
-        value of the portfolio across all symbols.
+        value of the portfolios across all symbols.
         """
         d = dict((k, v) for k, v in [(s, 0.0) for s in self.symbol_list])
         d['cash'] = self.initial_capital
@@ -174,7 +174,7 @@ class Portfolio(object):
 
     def update_fill(self, event):
         """
-        Updates the portfolio current positions and holdings
+        Updates the portfolios current positions and holdings
         from a FillEvent.
         """
         if event.type == 'FILL':
@@ -214,7 +214,7 @@ class Portfolio(object):
     def update_signal(self, event):
         """
         Acts on a SignalEvent to generate new orders
-        based on the portfolio logic.
+        based on the portfolios logic.
         """
         if event.type == 'SIGNAL':
             order_event = self.generate_naive_order(event)
@@ -237,7 +237,7 @@ class Portfolio(object):
 
     def output_summary_stats(self):
         """
-        Creates a list of summary statistics for the portfolio.
+        Creates a list of summary statistics for the portfolios.
         """
         total_return = self.equity_curve['equity_curve'][-1]
         returns = self.equity_curve['returns']

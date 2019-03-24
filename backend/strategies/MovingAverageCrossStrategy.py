@@ -1,12 +1,7 @@
-import datetime
 import numpy as np
 
-from backend.backtest import BackTest
-from backend.backtest import HistoricCSVDataHandler
-from backend.backtest.event import SignalEvent
-from backend.backtest import SimulatedExecutionHandler
-from backend.backtest import Portfolio
-from backend.backtest import Strategy
+from backend.events import SignalEvent
+from backend.strategies.abstract_strategy import Strategy
 
 
 class MovingAverageCrossStrategy(Strategy):
@@ -78,23 +73,3 @@ class MovingAverageCrossStrategy(Strategy):
                         signal = SignalEvent(strategy_id, symbol, dt, sig_dir, strength)
                         self.events.put(signal)
                         self.bought[symbol] = 'OUT'
-
-
-if __name__ == "__main__":
-    csv_dir = REPLACE_WITH_YOUR_CSV_DIR_HERE
-    symbol_list = ['AAPL']
-    initial_capital = 100000.0
-    start_date = datetime.datetime(1990, 1, 1, 0, 0, 0)
-    heartbeat = 0.0
-
-    backtest = BackTest(csv_dir,
-                        symbol_list,
-                        initial_capital,
-                        heartbeat,
-                        start_date,
-                        HistoricCSVDataHandler,
-                        SimulatedExecutionHandler,
-                        Portfolio,
-                        MovingAverageCrossStrategy)
-
-    backtest.simulate_trading()

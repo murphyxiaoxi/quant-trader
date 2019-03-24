@@ -8,3 +8,8 @@ class OrderTypeEnum(Enum):
     """
     MARKET = "MARKET"
     LIMIT = "LIMIT"
+
+
+class DirectionTypeEnum(Enum):
+    BUY = "BUY"
+    SELL = "SELL"
