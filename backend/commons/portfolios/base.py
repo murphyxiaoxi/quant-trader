@@ -99,31 +99,31 @@ class Portfolio(object):
         # Update positions
         # ================
         dp = dict([(s, 0) for s in self._symbol_code_list])
-        dp['datetime'] = latest_datetime
+        position = Position(latest_datetime, dp)
 
-        for s in self._symbol_code_list:
-            dp[s] = self._current_positions[s]
+        for symbol_code in self._symbol_code_list:
+            dp[symbol_code] = self._current_positions.symbol_position[symbol_code]
 
         # Append the current positions
-        self._all_positions.append(dp)
+        self._all_positions.append(position)
 
         # Update holdings
         # ===============
         dh = dict((k, v) for k, v in [(s, 0) for s in self._symbol_code_list])
-        dh['datetime'] = latest_datetime
-        dh['cash'] = self._current_holdings['cash']
-        dh['commission'] = self._current_holdings['commission']
-        dh['total'] = self._current_holdings['cash']
+        holding = Holding(latest_datetime, self._current_holdings.cash, self._current_holdings.commission,
+                          self._current_holdings.total, dh)
 
-        for s in self._symbol_code_list:
+        for symbol_code in self._symbol_code_list:
             # Approximation to the real value
-            market_value = self._current_positions[s] * \
-                           self._data_handler.get_bar_value(s, bar_val_type_enums.BarValTypeEnum.ADJ_CLOSE)
-            dh[s] = market_value
+            market_value: float = float(
+                self._current_positions.symbol_position[symbol_code]
+                * self._data_handler.get_bar_value(symbol_code, bar_val_type_enums.BarValTypeEnum.ADJ_CLOSE)
+            )
+            dh[symbol_code] = market_value
             dh['total'] += market_value
 
         # Append the current holdings
-        self._all_holdings.append(dh)
+        self._all_holdings.append(holding)
 
     # ======================
     # FILL/POSITION HANDLING
@@ -145,7 +145,7 @@ class Portfolio(object):
             fill_dir = -1
 
         # Update positions list with new quantities
-        self._current_positions[fill_event.symbol_code()] += fill_dir * fill_event.quantity
+        self._current_positions.symbol_position[fill_event.symbol_code()] += fill_dir * fill_event.quantity
 
     def update_holdings_from_fill(self, fill_event: FillEvent):
         """
@@ -167,10 +167,11 @@ class Portfolio(object):
             fill_event.symbol_code, bar_val_type_enums.BarValTypeEnum.ADJ_CLOSE
         )
         cost = fill_dir * fill_cost * fill_event.quantity
-        self._current_holdings[fill_event.symbol_code] += cost
-        self._current_holdings['commission'] += fill_event.commission
-        self._current_holdings['cash'] -= (cost + fill_event.commission)
-        self._current_holdings['total'] -= (cost + fill_event.commission)
+
+        self._current_holdings.symbol_hold[fill_event.symbol_code()] += cost
+        self._current_holdings.commission += fill_event.commission
+        self._current_holdings.cash -= (cost + fill_event.commission)
+        self._current_holdings.total -= (cost + fill_event.commission)
 
     def update_fill(self, fill_event: FillEvent):
         """
@@ -192,23 +193,29 @@ class Portfolio(object):
         """
         order = None
 
-        symbol_code = signal_event.symbol_code
+        symbol_code = signal_event.symbol_code()
         signal_type = signal_event.signal_type
         strength = signal_event.strength
 
         mkt_quantity = 100
-        cur_quantity = self._current_positions[symbol_code]
+        cur_quantity = self._current_positions.symbol_position[symbol_code]
         order_type = OrderTypeEnum.MARKET
 
         if signal_type == SignalTypeEnum.LONG and cur_quantity == 0:
-            order = OrderEvent(symbol_code, order_type, mkt_quantity, order_type_enums.DirectionTypeEnum.BUY)
+            order = OrderEvent(symbol_code, signal_event.date_time(), order_type, mkt_quantity,
+                               order_type_enums.DirectionTypeEnum.BUY)
+
         if signal_type == SignalTypeEnum.SHORT and cur_quantity == 0:
-            order = OrderEvent(symbol_code, order_type, mkt_quantity, order_type_enums.DirectionTypeEnum.SELL)
+            order = OrderEvent(symbol_code, signal_event.date_time(), order_type, mkt_quantity,
+                               order_type_enums.DirectionTypeEnum.SELL)
 
         if signal_type == SignalTypeEnum.EXIT and cur_quantity > 0:
-            order = OrderEvent(symbol_code, order_type, abs(cur_quantity), order_type_enums.DirectionTypeEnum.SELL)
+            order = OrderEvent(symbol_code, signal_event.date_time(), order_type, abs(cur_quantity),
+                               order_type_enums.DirectionTypeEnum.SELL)
+
         if signal_type == SignalTypeEnum.EXIT and cur_quantity < 0:
-            order = OrderEvent(symbol_code, order_type, abs(cur_quantity), order_type_enums.DirectionTypeEnum.BUY)
+            order = OrderEvent(symbol_code, signal_event.date_time(), order_type, abs(cur_quantity),
+                               order_type_enums.DirectionTypeEnum.BUY)
         return order
 
     def generate_order_event(self, signal_event: SignalEvent) -> Optional[OrderEvent]:
