@@ -1,10 +1,10 @@
 import numpy as np
 
-from backend.events import SignalEvent
-from backend.strategies.abstract_strategy import Strategy
+from backend.commons.abstract_strategy import AbstractStrategy
+from backend.commons.events.base import SignalEvent
 
 
-class MovingAverageCrossStrategy(Strategy):
+class MovingAverageCrossAbstractStrategy(AbstractStrategy):
     """
     Carries out a basic Moving Average Crossover strategy with a
     short/long simple weighted moving average. Default short/long

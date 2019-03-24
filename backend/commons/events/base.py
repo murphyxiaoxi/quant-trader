@@ -1,9 +1,8 @@
 from datetime import datetime
-
-from backend.enums import order_type_enums
-from backend.enums.event_type_enums import EventTypeEnum
-from backend.enums.order_type_enums import OrderTypeEnum
-from backend.enums.signal_type_enums import SignalTypeEnum
+from backend.commons.enums import order_type_enums
+from backend.commons.enums.event_type_enums import EventTypeEnum
+from backend.commons.enums.order_type_enums import OrderTypeEnum
+from backend.commons.enums.signal_type_enums import SignalTypeEnum
 
 
 class Event(object):

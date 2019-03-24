@@ -1,11 +1,11 @@
 import queue
 from abc import ABCMeta, abstractmethod
 
-from backend.data_handlers import CommonDataHandler
-from backend.events import Event, MarketEvent
+from backend.commons.data_handlers.abstract_handler import CommonDataHandler
+from backend.commons.events.base import Event, MarketEvent
 
 
-class Strategy(metaclass=ABCMeta):
+class AbstractStrategy(metaclass=ABCMeta):
     """
     Strategy is an abstract base class providing an interface for
     all subsequent (inherited) strategy handling objects.

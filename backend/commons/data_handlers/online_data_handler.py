@@ -3,7 +3,7 @@ from typing import List
 
 from pandas import DataFrame
 
-from backend.data_handlers.abstract_handler import CommonDataHandler
+from backend.commons.data_handlers.abstract_handler import CommonDataHandler
 
 
 class OnlineDataHandler(CommonDataHandler):

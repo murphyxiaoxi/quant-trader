@@ -1,16 +1,14 @@
 import queue
 from datetime import datetime
 
-from backend.data_handlers import CommonDataHandler
-from backend.enums import event_type_enums
-from backend.enums.bar_val_type_enums import BarValTypeEnum
-
-from backend.enums.order_type_enums import OrderTypeEnum
-from backend.enums.signal_type_enums import SignalTypeEnum
-from backend.events import OrderEvent, Event, FillEvent
-from backend.performance.base_performance import create_sharpe_ratio, create_draw_downs
-
 import pandas as pd
+
+from backend.commons.data_handlers.abstract_handler import CommonDataHandler
+from backend.commons.enums import order_type_enums, bar_val_type_enums
+from backend.commons.enums.order_type_enums import OrderTypeEnum
+from backend.commons.enums.signal_type_enums import SignalTypeEnum
+from backend.commons.events.base import Event, FillEvent, OrderEvent
+from backend.commons.performance.base_performance import create_sharpe_ratio, create_draw_downs
 
 
 class Portfolio(object):
@@ -118,7 +116,7 @@ class Portfolio(object):
         for s in self.symbol_list:
             # Approximation to the real value
             market_value = self.current_positions[s] * \
-                           self.data_handler.get_latest_bar_value(s, BarValTypeEnum.ADJ_CLOSE)
+                           self.data_handler.get_latest_bar_value(s, bar_val_type_enums.BarValTypeEnum.ADJ_CLOSE)
             dh[s] = market_value
             dh['total'] += market_value
 
@@ -139,9 +137,9 @@ class Portfolio(object):
         """
         # Check whether the fill is a buy or sell
         fill_dir = 0
-        if fill_event.direction == event_type_enums.DirectionTypeEnum.BUY:
+        if fill_event.direction == order_type_enums.DirectionTypeEnum.BUY:
             fill_dir = 1
-        if fill_event.direction == event_type_enums.DirectionTypeEnum.SELL:
+        if fill_event.direction == order_type_enums.DirectionTypeEnum.SELL:
             fill_dir = -1
 
         # Update positions list with new quantities
@@ -157,14 +155,14 @@ class Portfolio(object):
         """
         # Check whether the fill is a buy or sell
         fill_dir = 0
-        if fill.direction == event_type_enums.DirectionTypeEnum.BUY:
+        if fill.direction == order_type_enums.DirectionTypeEnum.BUY:
             fill_dir = 1
-        if fill.direction == event_type_enums.DirectionTypeEnum.SELL:
+        if fill.direction == order_type_enums.DirectionTypeEnum.SELL:
             fill_dir = -1
 
         # Update holdings list with new quantities
         fill_cost = self.data_handler.get_latest_bar_value(
-            fill.symbol, BarValTypeEnum.ADJ_CLOSE
+            fill.symbol, bar_val_type_enums.BarValTypeEnum.ADJ_CLOSE
         )
         cost = fill_dir * fill_cost * fill.quantity
         self.current_holdings[fill.symbol] += cost
@@ -201,14 +199,14 @@ class Portfolio(object):
         order_type = OrderTypeEnum.MARKET
 
         if direction == SignalTypeEnum.LONG and cur_quantity == 0:
-            order = OrderEvent(symbol, order_type, mkt_quantity, event_type_enums.DirectionTypeEnum.BUY)
+            order = OrderEvent(symbol, order_type, mkt_quantity, order_type_enums.DirectionTypeEnum.BUY)
         if direction == SignalTypeEnum.SHORT and cur_quantity == 0:
-            order = OrderEvent(symbol, order_type, mkt_quantity, event_type_enums.DirectionTypeEnum.SELL)
+            order = OrderEvent(symbol, order_type, mkt_quantity, order_type_enums.DirectionTypeEnum.SELL)
 
         if direction == SignalTypeEnum.EXIT and cur_quantity > 0:
-            order = OrderEvent(symbol, order_type, abs(cur_quantity), event_type_enums.DirectionTypeEnum.SELL)
+            order = OrderEvent(symbol, order_type, abs(cur_quantity), order_type_enums.DirectionTypeEnum.SELL)
         if direction == SignalTypeEnum.EXIT and cur_quantity < 0:
-            order = OrderEvent(symbol, order_type, abs(cur_quantity), event_type_enums.DirectionTypeEnum.BUY)
+            order = OrderEvent(symbol, order_type, abs(cur_quantity), order_type_enums.DirectionTypeEnum.BUY)
         return order
 
     def update_signal(self, event):

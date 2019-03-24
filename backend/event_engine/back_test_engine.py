@@ -5,15 +5,16 @@ import queue
 import time
 from typing import List
 
-from backend.backtest.datahandler import DataHandler
-from backend.enums import EventTypeEnum
-from backend.backtest.event import Event
-from backend.backtest.execution import ExecutionHandler
-from backend.backtest.portfolio import Portfolio
-from backend.backtest.strategies.strategy import Strategy
+from backend.commons.data_handlers import CommonDataHandler
+from backend.commons.enums import EventTypeEnum
+from backend.commons.events import Event
+from backend.commons.order_execution.order_execute_handler import AbstractOrderExecuteHandler
+from backend.commons.portfolios import Portfolio
+from backend.strategies.abstract_strategy import AbstractStrategy
 
 
 class BackTestEngine(object):
+    # todo 完善
     """
     Enscapsulates the settings and components for carrying out
     an event-driven backtest.
@@ -25,10 +26,10 @@ class BackTestEngine(object):
             symbol_list: List[str],
             initial_capital: float,
             start_date: str,
-            data_handler: DataHandler,
-            execution_handler: ExecutionHandler,
+            data_handler: CommonDataHandler,
+            execution_handler: AbstractOrderExecuteHandler,
             portfolio: Portfolio,
-            strategy: Strategy,
+            strategy: AbstractStrategy,
             heartbeat: int = 1,
     ):
         """
@@ -49,10 +50,10 @@ class BackTestEngine(object):
         self.heartbeat: int = heartbeat
         self.start_date: str = start_date
 
-        self.data_handler: DataHandler = data_handler
-        self.execution_handler: ExecutionHandler = execution_handler
+        self.data_handler: CommonDataHandler = data_handler
+        self.execution_handler: AbstractOrderExecuteHandler = execution_handler
         self.portfolio: Portfolio = portfolio
-        self.strategy: Strategy = strategy
+        self.strategy: AbstractStrategy = strategy
 
         self.events_que = queue.Queue()
 
