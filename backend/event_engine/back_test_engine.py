@@ -4,7 +4,7 @@
 import queue
 import time
 from datetime import datetime
-from typing import List, Dict, Set, Optional
+from typing import List, Dict, Optional
 
 from pandas import DataFrame
 
@@ -12,21 +12,21 @@ from backend.commons.abstract_strategy import AbstractStrategy
 from backend.commons.data_handlers.abstract_handler import CommonDataHandler
 from backend.commons.enums.event_type_enums import EventTypeEnum
 from backend.commons.events.base import AbstractEvent, MarketEvent, SignalEvent, OrderEvent, FillEvent
-from backend.commons.order_execution.order_execute_handler import AbstractOrderExecuteHandler, \
-    SimulatedOrderExecuteHandler
+from backend.commons.order_execution.order_execute_handler import SimulatedOrderExecuteHandler
 from backend.commons.portfolios.base import Portfolio
+from backend.commons.utils import Singleton
 
 
 class BackTestEngine(object):
-    # todo 完善
     """
     事件驱动型回测框架
     process_pipeline:
     EventEngine:MarketEvent => DataHandler:Data =>
-
+    Strategy:SignalEvent => Portfolio:OrderEvent =>
+    OrderExecuteHandler:FillEvent => Portfolio
     """
 
-    def __init__(self, symbol_code_list: List[str], initial_capital: float, start_date: str,
+    def __init__(self, back_test_name, symbol_code_list: List[str], initial_capital: float, start_date: datetime,
                  data_handler: CommonDataHandler, strategy: AbstractStrategy):
         """
         
@@ -36,16 +36,18 @@ class BackTestEngine(object):
         :param data_handler: 
         :param strategy: 
         """
+        self.back_test_name = back_test_name
         self.symbol_code_list: List[str] = symbol_code_list
         self.initial_capital: float = initial_capital
-        self.start_date: str = start_date
+        self.start_date: datetime = start_date
         self.data_handler: CommonDataHandler = data_handler
         self.strategy: AbstractStrategy = strategy
 
         """
         
         """
-        self.portfolio: Portfolio = Portfolio()
+        self.portfolio: Portfolio = Portfolio(self.data_handler, self.start_date, self.symbol_code_list,
+                                              self.initial_capital)
         self.execution_handler: SimulatedOrderExecuteHandler = SimulatedOrderExecuteHandler()
 
         self.global_events_que = queue.Queue()
@@ -58,20 +60,20 @@ class BackTestEngine(object):
 
         # map(symbol_code -> previous_processed_date_index)
         # 前一次处理的历史交易日期Index
-        self.previous_process_date_index_map: Dict[str, int] = {}
+        self.previous_trade_date_index: Dict[str, int] = {}
 
-        self.symbol_whole_bill_date: Dict[str, List[datetime]] = dict(
+        self.whole_history_trade_dates: Dict[str, List[datetime]] = dict(
             [
-                (symbol_code, self.data_handler.get_symbol_whole_bill_date(symbol_code).sort(reverse=False))
+                (symbol_code, self.data_handler.get_history_trade_date(symbol_code).sort(reverse=False))
                 for symbol_code in self.symbol_code_list
             ]
         )
 
     def _init_first_market_events(self):
         init_index = 0
-        for symbol_code in self.symbol_whole_bill_date.keys():
-            bill_date_list = self.symbol_whole_bill_date[symbol_code]
-            self.previous_process_date_index_map[symbol_code] = init_index
+        for symbol_code in self.whole_history_trade_dates.keys():
+            bill_date_list = self.whole_history_trade_dates[symbol_code]
+            self.previous_trade_date_index[symbol_code] = init_index
 
             self.global_events_que.put(MarketEvent(bill_date_list[init_index]))
 
@@ -103,16 +105,16 @@ class BackTestEngine(object):
                         self._process_event(event)
                         # 记录前一次处理交易日Index
                         symbol_code = event.symbol_code()
-                        previous_index = self.previous_process_date_index_map[symbol_code]
+                        previous_index = self.previous_trade_date_index[symbol_code]
                         # 处理完成
-                        if previous_index + 1 >= len(self.symbol_whole_bill_date[symbol_code]):
+                        if previous_index + 1 >= len(self.whole_history_trade_dates[symbol_code]):
                             continue
                         # 发送市场信号
-                        next_date = self.symbol_whole_bill_date[symbol_code][previous_index + 1]
+                        next_date = self.whole_history_trade_dates[symbol_code][previous_index + 1]
                         self.global_events_que.put(MarketEvent(symbol_code, next_date))
                         # 更新交易日Index
-                        self.previous_process_date_index_map[event.symbol_code()] \
-                            = self.previous_process_date_index_map[event.symbol_code()] + 1
+                        self.previous_trade_date_index[event.symbol_code()] \
+                            = self.previous_trade_date_index[event.symbol_code()] + 1
 
             time.sleep(self._heartbeat_time)
 

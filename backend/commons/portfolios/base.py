@@ -117,7 +117,7 @@ class Portfolio(object):
         for s in self.symbol_code_list:
             # Approximation to the real value
             market_value = self.current_positions[s] * \
-                           self.data_handler.get_latest_bar_value(s, bar_val_type_enums.BarValTypeEnum.ADJ_CLOSE)
+                           self.data_handler.get_bar_value(s, bar_val_type_enums.BarValTypeEnum.ADJ_CLOSE)
             dh[s] = market_value
             dh['total'] += market_value
 
@@ -162,7 +162,7 @@ class Portfolio(object):
             fill_dir = -1
 
         # Update holdings list with new quantities
-        fill_cost = self.data_handler.get_latest_bar_value(
+        fill_cost = self.data_handler.get_bar_value(
             fill_event.symbol_code, bar_val_type_enums.BarValTypeEnum.ADJ_CLOSE
         )
         cost = fill_dir * fill_cost * fill_event.quantity

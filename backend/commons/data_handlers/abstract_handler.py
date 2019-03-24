@@ -4,7 +4,7 @@ from typing import List
 
 from pandas import DataFrame
 
-from backend.commons.enums import bar_val_type_enums
+from backend.commons.enums.bar_val_type_enums import BarValTypeEnum
 
 
 class CommonDataHandler(metaclass=ABCMeta):
@@ -19,15 +19,15 @@ class CommonDataHandler(metaclass=ABCMeta):
         self.cols_name: List[str] = cols_name
 
     @abstractmethod
-    def get_symbol_whole_bill_date(self, symbol_code) -> List[datetime]:
+    def get_history_trade_date(self, symbol_code) -> List[datetime]:
         raise NotImplementedError()
 
     @abstractmethod
-    def get_latest_bar(self, symbol_code: str, date: str) -> DataFrame:
+    def get_bar(self, symbol_code: str, date_time: datetime) -> DataFrame:
         raise NotImplementedError()
 
     @abstractmethod
-    def get_latest_bar_value(self, symbol_code, bar_val_type: bar_val_type_enums.BarValTypeEnum) -> float:
+    def get_bar_value(self, symbol_code, date_time: datetime, bar_val_type: BarValTypeEnum) -> float:
         raise NotImplementedError()
 
     @abstractmethod
