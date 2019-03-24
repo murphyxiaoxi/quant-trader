@@ -1,13 +1,14 @@
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 import pandas as pd
 
 from backend.commons.data_handlers.abstract_handler import CommonDataHandler
 from backend.commons.enums import order_type_enums, bar_val_type_enums
+from backend.commons.enums.event_type_enums import EventTypeEnum
 from backend.commons.enums.order_type_enums import OrderTypeEnum
 from backend.commons.enums.signal_type_enums import SignalTypeEnum
-from backend.commons.events.base import FillEvent, OrderEvent, SignalEvent
+from backend.commons.events.base import FillEvent, OrderEvent, SignalEvent, MarketEvent
 from backend.commons.performance.base_performance import create_sharpe_ratio, create_draw_downs
 
 
@@ -84,7 +85,7 @@ class Portfolio(object):
         d['total'] = self.initial_capital
         return d
 
-    def update_time_index(self, signal_event: SignalEvent):
+    def update_time_index_for_market_event(self, market_event: MarketEvent):
         """
         Adds a new record to the positions matrix for the current
         market data bar. This reflects the PREVIOUS bar, i.e. all
@@ -92,7 +93,7 @@ class Portfolio(object):
 
         Makes use of a MarketEvent from the events queue.
         """
-        latest_datetime = self.data_handler.get_latest_bar_datetime(self.symbol_code_list[0])
+        latest_datetime = market_event.date_time()
 
         # Update positions
         # ================
@@ -170,16 +171,16 @@ class Portfolio(object):
         self.current_holdings['cash'] -= (cost + fill_event.commission)
         self.current_holdings['total'] -= (cost + fill_event.commission)
 
-    def update_fill(self, event):
+    def update_fill(self, fill_event: FillEvent):
         """
         Updates the portfolios current positions and holdings
         from a FillEvent.
         """
-        if event.type == 'FILL':
-            self.update_positions_from_fill(event)
-            self.update_holdings_from_fill(event)
+        if fill_event.event_type() == EventTypeEnum.FILL:
+            self.update_positions_from_fill(fill_event)
+            self.update_holdings_from_fill(fill_event)
 
-    def generate_naive_order(self, signal):
+    def _generate_naive_order(self, signal_event: SignalEvent) -> OrderEvent:
         """
         Simply files an Order object as a constant quantity
         sizing of the signal object, without risk management or
@@ -190,33 +191,35 @@ class Portfolio(object):
         """
         order = None
 
-        symbol = signal.symbol
-        direction = signal.signal_type
-        strength = signal.strength
+        symbol_code = signal_event.symbol_code
+        signal_type = signal_event.signal_type
+        strength = signal_event.strength
 
         mkt_quantity = 100
-        cur_quantity = self.current_positions[symbol]
+        cur_quantity = self.current_positions[symbol_code]
         order_type = OrderTypeEnum.MARKET
 
-        if direction == SignalTypeEnum.LONG and cur_quantity == 0:
-            order = OrderEvent(symbol, order_type, mkt_quantity, order_type_enums.DirectionTypeEnum.BUY)
-        if direction == SignalTypeEnum.SHORT and cur_quantity == 0:
-            order = OrderEvent(symbol, order_type, mkt_quantity, order_type_enums.DirectionTypeEnum.SELL)
+        if signal_type == SignalTypeEnum.LONG and cur_quantity == 0:
+            order = OrderEvent(symbol_code, order_type, mkt_quantity, order_type_enums.DirectionTypeEnum.BUY)
+        if signal_type == SignalTypeEnum.SHORT and cur_quantity == 0:
+            order = OrderEvent(symbol_code, order_type, mkt_quantity, order_type_enums.DirectionTypeEnum.SELL)
 
-        if direction == SignalTypeEnum.EXIT and cur_quantity > 0:
-            order = OrderEvent(symbol, order_type, abs(cur_quantity), order_type_enums.DirectionTypeEnum.SELL)
-        if direction == SignalTypeEnum.EXIT and cur_quantity < 0:
-            order = OrderEvent(symbol, order_type, abs(cur_quantity), order_type_enums.DirectionTypeEnum.BUY)
+        if signal_type == SignalTypeEnum.EXIT and cur_quantity > 0:
+            order = OrderEvent(symbol_code, order_type, abs(cur_quantity), order_type_enums.DirectionTypeEnum.SELL)
+        if signal_type == SignalTypeEnum.EXIT and cur_quantity < 0:
+            order = OrderEvent(symbol_code, order_type, abs(cur_quantity), order_type_enums.DirectionTypeEnum.BUY)
         return order
 
-    def update_signal(self, event):
+    def generate_order_event(self, signal_event: SignalEvent) -> Optional[OrderEvent]:
         """
         Acts on a SignalEvent to generate new orders
         based on the portfolios logic.
         """
-        if event.type == 'SIGNAL':
-            order_event = self.generate_naive_order(event)
-            self.events_que.put(order_event)
+        if signal_event.event_type() == EventTypeEnum.SIGNAL:
+            order_event = self._generate_naive_order(signal_event)
+            return order_event
+        else:
+            return None
 
     # ========================
     # POST-BACKTEST STATISTICS

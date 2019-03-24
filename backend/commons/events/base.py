@@ -14,15 +14,23 @@ class AbstractEvent(metaclass=ABCMeta):
     trading infrastructure.
     """
 
-    def __init__(self, date_time: datetime, event_type: EventTypeEnum):
+    def __init__(self, symbol_code: str, date_time: datetime, event_type: EventTypeEnum):
+        self._symbol_code = symbol_code
         self._date_time = date_time
         self._event_type = event_type
+
+    def symbol_code(self):
+        return self._symbol_code
 
     def event_type(self):
         return self._event_type
 
     def date_time(self):
         return self._date_time
+
+    def __str__(self) -> str:
+        return "AbstractEvent(symbol_code=%s, date_time=%s, event_type=%s)" \
+               % (self.symbol_code(), self.date_time(), self.event_type())
 
 
 class MarketEvent(AbstractEvent):
@@ -31,11 +39,15 @@ class MarketEvent(AbstractEvent):
     corresponding bars.
     """
 
-    def __init__(self, date_time: datetime):
+    def __init__(self, symbol_code: str, date_time: datetime):
         """
         Initialises the MarketEvent.
         """
-        super().__init__(date_time, EventTypeEnum.MARKET)
+        super().__init__(symbol_code, date_time, EventTypeEnum.MARKET)
+
+    def __str__(self) -> str:
+        return "MarketEvent(symbol_code=%s, date_time=%s, event_type=%s)" \
+               % (self.symbol_code(), self.date_time(), self.event_type())
 
 
 class SignalEvent(AbstractEvent):
@@ -44,7 +56,7 @@ class SignalEvent(AbstractEvent):
     This is received by a Portfolio object and acted upon.
     """
 
-    def __init__(self, date_time: datetime, strategy_id: int, symbol_code: str, signal_type: SignalTypeEnum, strength):
+    def __init__(self, symbol_code: str, date_time: datetime, signal_type: SignalTypeEnum, strategy_id: int, strength):
         """
         Initialises the SignalEvent.
 
@@ -56,12 +68,15 @@ class SignalEvent(AbstractEvent):
         strength - An adjustment factor "suggestion" used to scale
             quantity at the portfolios level. Useful for pairs strategies.
         """
-        super().__init__(date_time, EventTypeEnum.MARKET)
+        super().__init__(symbol_code, date_time, EventTypeEnum.MARKET)
         self.strategy_id: int = strategy_id
-        self.symbol_code: str = symbol_code
-        self.date_time: datetime = date_time
         self.signal_type: SignalTypeEnum = signal_type
         self.strength = strength
+
+    def __str__(self) -> str:
+        return "SignalEvent(symbol_code=%s, date_time=%s, event_type=%s, signal_type=%s, strategy_id=%s,strength=%s)" \
+               % (self.symbol_code(), self.date_time(), self.event_type(), self.signal_type, self.strategy_id,
+                  self.strength)
 
 
 class OrderEvent(AbstractEvent):
@@ -71,7 +86,7 @@ class OrderEvent(AbstractEvent):
     quantity and a direction.
     """
 
-    def __init__(self, date_time: datetime, symbol_code: str, order_type: OrderTypeEnum, quantity: int,
+    def __init__(self, symbol_code: str, date_time: datetime, order_type: OrderTypeEnum, quantity: int,
                  direction_type: order_type_enums.DirectionTypeEnum):
         """
         Initialises the order type, setting whether it is
@@ -88,18 +103,16 @@ class OrderEvent(AbstractEvent):
         quantity - Non-negative integer for quantity.
         direction - 'BUY' or 'SELL' for long or short.
         """
-        super().__init__(date_time, EventTypeEnum.MARKET)
-        self.symbol_code: str = symbol_code
+        super().__init__(symbol_code, date_time, EventTypeEnum.MARKET)
         self.order_type: OrderTypeEnum = order_type
         self.quantity: int = quantity
         self.direction_type: order_type_enums.DirectionTypeEnum = direction_type
 
-    def print_order(self):
-        """
-        Outputs the values within the Order.
-        """
-        print("Order: Symbol=%s, Type=%s, Quantity=%s, Direction=%s",
-              self.symbol_code, self.order_type, self.quantity, self.direction_type)
+    def __str__(self) -> str:
+        return "SignalEvent(symbol_code=%s, date_time=%s, event_type=%s, order_type=%s, quantity=%s" \
+               ",direction_type=%s)" \
+               % (self.symbol_code(), self.date_time(), self.event_type(), self.order_type, self.quantity,
+                  self.direction_type)
 
 
 class FillEvent(AbstractEvent):
@@ -115,8 +128,14 @@ class FillEvent(AbstractEvent):
     the cost.
     """
 
-    def __init__(self, date_time: datetime, symbol_code: str, exchange: str, quantity,
-                 direction_type: order_type_enums.DirectionTypeEnum, fill_cost: float, commission: bool):
+    def __init__(self,
+                 symbol_code: str,
+                 date_time: datetime,
+                 quantity: int,
+                 direction_type: order_type_enums.DirectionTypeEnum,
+                 fill_cost: float,
+                 commission: bool,
+                 exchanger: str):
         """
         Initialises the FillEvent object. Sets the symbol, exchange,
         quantity, direction, cost of fill and an optional
@@ -128,15 +147,21 @@ class FillEvent(AbstractEvent):
 
         :param date_time: - The bar-resolution when the order was filled.
         :param symbol_code - The instrument which was filled.
-        :param exchange - The exchange where the order was filled. 交易所
         :param quantity - The filled quantity. 数量
         :param direction_type - The direction of fill ('BUY' or 'SELL')
         :param fill_cost - The holdings value in dollars. 消费金额
+        :param exchanger - The exchange where the order was filled. 交易所名称
         """
-        super().__init__(date_time, EventTypeEnum.FILL)
-        self.symbol_code: str = symbol_code
-        self.exchange: str = exchange
+        super().__init__(symbol_code, date_time, EventTypeEnum.FILL)
         self.quantity: int = quantity
         self.direction_type: order_type_enums.DirectionTypeEnum = direction_type
         self.fill_cost: float = fill_cost
         self.commission = commission
+        self.exchanger: str = exchanger
+
+    def __str__(self) -> str:
+        return "SignalEvent(symbol_code=%s, date_time=%s, event_type=%s, quantity=%s, direction_type=%s" \
+               ",fill_cost=%s, commission=%s, exchanger=%s)" \
+               % (self.symbol_code(), self.date_time(), self.event_type(), self.quantity, self.direction_type,
+                  self.fill_cost, self.commission, self.exchanger)
+

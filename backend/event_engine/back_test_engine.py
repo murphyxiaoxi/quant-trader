@@ -4,12 +4,12 @@
 import queue
 import time
 from datetime import datetime
-from typing import List, Dict, Set
+from typing import List, Dict, Set, Optional
 
 from backend.commons.abstract_strategy import AbstractStrategy
 from backend.commons.data_handlers.abstract_handler import CommonDataHandler
 from backend.commons.enums.event_type_enums import EventTypeEnum
-from backend.commons.events.base import AbstractEvent, MarketEvent
+from backend.commons.events.base import AbstractEvent, MarketEvent, SignalEvent, OrderEvent, FillEvent
 from backend.commons.order_execution.order_execute_handler import AbstractOrderExecuteHandler, \
     SimulatedOrderExecuteHandler
 from backend.commons.portfolios.base import Portfolio
@@ -85,11 +85,33 @@ class BackTestEngine(object):
                         continue
                     else:
                         self._process_event(event)
+                        self.previous_process_date_index_map[event.symbol_code()] = self.previous_process_date_index_map[event.symbol_code] + 1
 
             time.sleep(self._heartbeat_time)
 
     def _process_event(self, event: AbstractEvent):
         if event.event_type() == EventTypeEnum.MARKET:
+            self.portfolio.update_time_index_for_market_event(event)
+            # 计算策略信号
+            signal_event: Optional[SignalEvent] = self.strategy.calculate_signals(event)
+            if signal_event is not None:
+                self.global_events_que.put(signal_event)
+
+        elif event.event_type() == EventTypeEnum.SIGNAL:
+            self.signals += 1
+            order_event: Optional[OrderEvent] = self.portfolio.generate_order_event(event)
+            if order_event is not None:
+                self.global_events_que.put(order_event)
+
+        elif event.event_type() == EventTypeEnum.ORDER:
+            self.orders += 1
+            fill_event: Optional[FillEvent] = self.execution_handler.execute_order(event)
+            if fill_event is not None:
+                self.global_events_que.put(fill_event)
+
+        elif event.event_type() == EventTypeEnum.FILL:
+            self.fills += 1
+            self.portfolio.update_fill(event)
 
     def _output_performance(self):
         """
