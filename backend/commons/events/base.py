@@ -1,5 +1,6 @@
 from abc import ABCMeta
 from datetime import datetime
+
 from backend.commons.enums import order_type_enums
 from backend.commons.enums.event_type_enums import EventTypeEnum
 from backend.commons.enums.order_type_enums import OrderTypeEnum
@@ -13,11 +14,15 @@ class AbstractEvent(metaclass=ABCMeta):
     trading infrastructure.
     """
 
-    def __init__(self, event_type: EventTypeEnum):
+    def __init__(self, date_time: datetime, event_type: EventTypeEnum):
+        self._date_time = date_time
         self._event_type = event_type
 
     def event_type(self):
         return self._event_type
+
+    def date_time(self):
+        return self._date_time
 
 
 class MarketEvent(AbstractEvent):
@@ -26,11 +31,11 @@ class MarketEvent(AbstractEvent):
     corresponding bars.
     """
 
-    def __init__(self):
+    def __init__(self, date_time: datetime):
         """
         Initialises the MarketEvent.
         """
-        super().__init__(EventTypeEnum.MARKET)
+        super().__init__(date_time, EventTypeEnum.MARKET)
 
 
 class SignalEvent(AbstractEvent):
@@ -39,7 +44,7 @@ class SignalEvent(AbstractEvent):
     This is received by a Portfolio object and acted upon.
     """
 
-    def __init__(self, strategy_id: int, symbol: str, date_time: datetime, signal_type: SignalTypeEnum, strength):
+    def __init__(self, date_time: datetime, strategy_id: int, symbol_code: str, signal_type: SignalTypeEnum, strength):
         """
         Initialises the SignalEvent.
 
@@ -51,9 +56,9 @@ class SignalEvent(AbstractEvent):
         strength - An adjustment factor "suggestion" used to scale
             quantity at the portfolios level. Useful for pairs strategies.
         """
-        super().__init__(EventTypeEnum.SIGNAL)
+        super().__init__(date_time, EventTypeEnum.MARKET)
         self.strategy_id: int = strategy_id
-        self.symbol: str = symbol
+        self.symbol_code: str = symbol_code
         self.date_time: datetime = date_time
         self.signal_type: SignalTypeEnum = signal_type
         self.strength = strength
@@ -66,7 +71,7 @@ class OrderEvent(AbstractEvent):
     quantity and a direction.
     """
 
-    def __init__(self, symbol: str, order_type: OrderTypeEnum, quantity: int,
+    def __init__(self, date_time: datetime, symbol_code: str, order_type: OrderTypeEnum, quantity: int,
                  direction_type: order_type_enums.DirectionTypeEnum):
         """
         Initialises the order type, setting whether it is
@@ -83,8 +88,8 @@ class OrderEvent(AbstractEvent):
         quantity - Non-negative integer for quantity.
         direction - 'BUY' or 'SELL' for long or short.
         """
-        super().__init__(EventTypeEnum.ORDER)
-        self.symbol: str = symbol
+        super().__init__(date_time, EventTypeEnum.MARKET)
+        self.symbol_code: str = symbol_code
         self.order_type: OrderTypeEnum = order_type
         self.quantity: int = quantity
         self.direction_type: order_type_enums.DirectionTypeEnum = direction_type
@@ -94,7 +99,7 @@ class OrderEvent(AbstractEvent):
         Outputs the values within the Order.
         """
         print("Order: Symbol=%s, Type=%s, Quantity=%s, Direction=%s",
-              self.symbol, self.order_type, self.quantity, self.direction_type)
+              self.symbol_code, self.order_type, self.quantity, self.direction_type)
 
 
 class FillEvent(AbstractEvent):
@@ -110,8 +115,8 @@ class FillEvent(AbstractEvent):
     the cost.
     """
 
-    def __init__(self, time_index: datetime, symbol: str, exchange: str, quantity,
-                 direction_type: order_type_enums.DirectionTypeEnum, fill_cost: float):
+    def __init__(self, date_time: datetime, symbol_code: str, exchange: str, quantity,
+                 direction_type: order_type_enums.DirectionTypeEnum, fill_cost: float, commission: bool):
         """
         Initialises the FillEvent object. Sets the symbol, exchange,
         quantity, direction, cost of fill and an optional
@@ -121,17 +126,17 @@ class FillEvent(AbstractEvent):
         calculate it based on the trade size and Interactive
         Brokers fees.
 
-        :param time_index: - The bar-resolution when the order was filled.
-        :param symbol - The instrument which was filled.
+        :param date_time: - The bar-resolution when the order was filled.
+        :param symbol_code - The instrument which was filled.
         :param exchange - The exchange where the order was filled. 交易所
         :param quantity - The filled quantity. 数量
         :param direction_type - The direction of fill ('BUY' or 'SELL')
         :param fill_cost - The holdings value in dollars. 消费金额
         """
-        super().__init__(EventTypeEnum.FILL)
-        self.time_index: datetime = time_index
-        self.symbol: str = symbol
+        super().__init__(date_time, EventTypeEnum.FILL)
+        self.symbol_code: str = symbol_code
         self.exchange: str = exchange
         self.quantity: int = quantity
         self.direction_type: order_type_enums.DirectionTypeEnum = direction_type
         self.fill_cost: float = fill_cost
+        self.commission = commission

@@ -1,7 +1,10 @@
 from abc import ABCMeta, abstractmethod
+from datetime import datetime
 from typing import List
 
 from pandas import DataFrame
+
+from backend.commons.enums import bar_val_type_enums
 
 
 class CommonDataHandler(metaclass=ABCMeta):
@@ -16,5 +19,13 @@ class CommonDataHandler(metaclass=ABCMeta):
         self.cols_name: List[str] = cols_name
 
     @abstractmethod
+    def get_symbol_whole_bill_date(self, symbol_code) -> List[datetime]:
+        raise NotImplementedError()
+
+    @abstractmethod
     def get_latest_bar(self, symbol_code: str, date: str) -> DataFrame:
-        pass
+        raise NotImplementedError()
+
+    @abstractmethod
+    def get_latest_bar_value(self, symbol_code, bar_val_type: bar_val_type_enums.BarValTypeEnum) -> float:
+        raise NotImplementedError()

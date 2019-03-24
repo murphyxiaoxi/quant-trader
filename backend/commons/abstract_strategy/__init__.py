@@ -1,9 +1,8 @@
-import queue
 from abc import ABCMeta, abstractmethod
 
 from backend.commons.data_handlers.abstract_handler import CommonDataHandler
 from backend.commons.enums.event_type_enums import EventTypeEnum
-from backend.commons.events.base import AbstractEvent, MarketEvent
+from backend.commons.events.base import MarketEvent, SignalEvent
 
 
 class AbstractStrategy(metaclass=ABCMeta):
@@ -24,7 +23,7 @@ class AbstractStrategy(metaclass=ABCMeta):
         self.data_handler = data_handler
 
     @abstractmethod
-    def calculate_signals(self, global_events_queue: queue.Queue[AbstractEvent], market_event: MarketEvent):
+    def calculate_signals(self, market_event: MarketEvent) -> SignalEvent:
         """
         Provides the mechanisms to calculate the list of signals.
         """

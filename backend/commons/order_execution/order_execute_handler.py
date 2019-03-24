@@ -1,9 +1,9 @@
 from abc import abstractmethod, ABCMeta
 from datetime import datetime
-from queue import Queue
+from typing import Optional
 
 from backend.commons.enums.event_type_enums import EventTypeEnum
-from backend.commons.events.base import FillEvent, AbstractEvent, OrderEvent
+from backend.commons.events.base import FillEvent, OrderEvent
 
 
 class AbstractOrderExecuteHandler(metaclass=ABCMeta):
@@ -20,7 +20,7 @@ class AbstractOrderExecuteHandler(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def execute_order(self, events_queue: Queue[AbstractEvent], event):
+    def execute_order(self, order_event: OrderEvent):
         """
         Takes an Order event and executes it, producing
         a Fill event that gets placed onto the Events queue.
@@ -52,7 +52,7 @@ class SimulatedOrderExecuteHandler(AbstractOrderExecuteHandler):
         events - The Queue of Event objects.
         """
 
-    def execute_order(self, events_queue: Queue[AbstractEvent], event: AbstractEvent):
+    def execute_order(self, order_event: OrderEvent) -> Optional[FillEvent]:
         """
         Simply converts Order objects into Fill objects naively,
         i.e. without any latency, slippage or fill ratio problems.
@@ -60,9 +60,12 @@ class SimulatedOrderExecuteHandler(AbstractOrderExecuteHandler):
         Parameters:
         event - Contains an Event object with order information.
         """
-        if event.event_type == EventTypeEnum.ORDER:
+        if order_event.event_type == EventTypeEnum.ORDER:
             fill_event = FillEvent(
-                datetime.utcnow(), event.symbol,
-                'ARCA', event.quantity, event.direction, None
+                datetime.utcnow(), order_event.symbol_code,
+                'ARCA', order_event.quantity, order_event.direction_type, None
             )
-            self.events_que.put(fill_event)
+            return fill_event
+
+        else:
+            return None

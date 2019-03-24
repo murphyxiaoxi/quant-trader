@@ -1,5 +1,5 @@
-import queue
 from datetime import datetime
+from typing import List
 
 import pandas as pd
 
@@ -7,10 +7,11 @@ from backend.commons.data_handlers.abstract_handler import CommonDataHandler
 from backend.commons.enums import order_type_enums, bar_val_type_enums
 from backend.commons.enums.order_type_enums import OrderTypeEnum
 from backend.commons.enums.signal_type_enums import SignalTypeEnum
-from backend.commons.events.base import AbstractEvent, FillEvent, OrderEvent
+from backend.commons.events.base import FillEvent, OrderEvent, SignalEvent
 from backend.commons.performance.base_performance import create_sharpe_ratio, create_draw_downs
 
 
+# todo 完善功能 重要
 class Portfolio(object):
     """
     The Portfolio class handles the positions and market
@@ -26,7 +27,7 @@ class Portfolio(object):
     portfolios total across bars.
     """
 
-    def __init__(self, data_handler: CommonDataHandler, events_que: queue.Queue[AbstractEvent], start_date: datetime,
+    def __init__(self, data_handler: CommonDataHandler, start_date: datetime, symbol_code_list: List[str],
                  initial_capital: float = 100000.0):
         """
         Initialises the portfolios with bars and an event queue.
@@ -40,13 +41,12 @@ class Portfolio(object):
         initial_capital - The starting capital in USD.
         """
         self.data_handler: CommonDataHandler = data_handler
-        self.events_que: queue.Queue[AbstractEvent] = events_que
-        self.symbol_list = self.data_handler.symbol_list
+        self.symbol_code_list = symbol_code_list
         self.start_date: datetime = start_date
         self.initial_capital: float = initial_capital
 
         self.all_positions = self.construct_all_positions()
-        self.current_positions = dict((k, v) for k, v in [(s, 0) for s in self.symbol_list])
+        self.current_positions = dict((k, v) for k, v in [(s, 0) for s in self.symbol_code_list])
 
         self.all_holdings = self.construct_all_holdings()
         self.current_holdings = self.construct_current_holdings()
@@ -57,7 +57,7 @@ class Portfolio(object):
         Constructs the positions list using the start_date
         to determine when the time index will begin.
         """
-        d = dict((k, v) for k, v in [(s, 0) for s in self.symbol_list])
+        d = dict((k, v) for k, v in [(s, 0) for s in self.symbol_code_list])
         d['datetime'] = self.start_date
         return [d]
 
@@ -66,7 +66,7 @@ class Portfolio(object):
         Constructs the holdings list using the start_date
         to determine when the time index will begin.
         """
-        d = dict((k, v) for k, v in [(s, 0.0) for s in self.symbol_list])
+        d = dict((k, v) for k, v in [(s, 0.0) for s in self.symbol_code_list])
         d['datetime'] = self.start_date
         d['cash'] = self.initial_capital
         d['commission'] = 0.0
@@ -78,13 +78,13 @@ class Portfolio(object):
         This constructs the dictionary which will hold the instantaneous
         value of the portfolios across all symbols.
         """
-        d = dict((k, v) for k, v in [(s, 0.0) for s in self.symbol_list])
+        d = dict((k, v) for k, v in [(s, 0.0) for s in self.symbol_code_list])
         d['cash'] = self.initial_capital
         d['commission'] = 0.0
         d['total'] = self.initial_capital
         return d
 
-    def update_time_index(self, event):
+    def update_time_index(self, signal_event: SignalEvent):
         """
         Adds a new record to the positions matrix for the current
         market data bar. This reflects the PREVIOUS bar, i.e. all
@@ -92,14 +92,14 @@ class Portfolio(object):
 
         Makes use of a MarketEvent from the events queue.
         """
-        latest_datetime = self.data_handler.get_latest_bar_datetime(self.symbol_list[0])
+        latest_datetime = self.data_handler.get_latest_bar_datetime(self.symbol_code_list[0])
 
         # Update positions
         # ================
-        dp = dict((k, v) for k, v in [(s, 0) for s in self.symbol_list])
+        dp = dict((k, v) for k, v in [(s, 0) for s in self.symbol_code_list])
         dp['datetime'] = latest_datetime
 
-        for s in self.symbol_list:
+        for s in self.symbol_code_list:
             dp[s] = self.current_positions[s]
 
         # Append the current positions
@@ -107,13 +107,13 @@ class Portfolio(object):
 
         # Update holdings
         # ===============
-        dh = dict((k, v) for k, v in [(s, 0) for s in self.symbol_list])
+        dh = dict((k, v) for k, v in [(s, 0) for s in self.symbol_code_list])
         dh['datetime'] = latest_datetime
         dh['cash'] = self.current_holdings['cash']
         dh['commission'] = self.current_holdings['commission']
         dh['total'] = self.current_holdings['cash']
 
-        for s in self.symbol_list:
+        for s in self.symbol_code_list:
             # Approximation to the real value
             market_value = self.current_positions[s] * \
                            self.data_handler.get_latest_bar_value(s, bar_val_type_enums.BarValTypeEnum.ADJ_CLOSE)
@@ -143,9 +143,9 @@ class Portfolio(object):
             fill_dir = -1
 
         # Update positions list with new quantities
-        self.current_positions[fill_event.symbol] += fill_dir * fill_event.quantity
+        self.current_positions[fill_event.symbol_code] += fill_dir * fill_event.quantity
 
-    def update_holdings_from_fill(self, fill):
+    def update_holdings_from_fill(self, fill_event: FillEvent):
         """
         Takes a Fill object and updates the holdings matrix to
         reflect the holdings value.
@@ -155,20 +155,20 @@ class Portfolio(object):
         """
         # Check whether the fill is a buy or sell
         fill_dir = 0
-        if fill.direction == order_type_enums.DirectionTypeEnum.BUY:
+        if fill_event.direction_type == order_type_enums.DirectionTypeEnum.BUY:
             fill_dir = 1
-        if fill.direction == order_type_enums.DirectionTypeEnum.SELL:
+        if fill_event.direction_type == order_type_enums.DirectionTypeEnum.SELL:
             fill_dir = -1
 
         # Update holdings list with new quantities
         fill_cost = self.data_handler.get_latest_bar_value(
-            fill.symbol, bar_val_type_enums.BarValTypeEnum.ADJ_CLOSE
+            fill_event.symbol_code, bar_val_type_enums.BarValTypeEnum.ADJ_CLOSE
         )
-        cost = fill_dir * fill_cost * fill.quantity
-        self.current_holdings[fill.symbol] += cost
-        self.current_holdings['commission'] += fill.commission
-        self.current_holdings['cash'] -= (cost + fill.commission)
-        self.current_holdings['total'] -= (cost + fill.commission)
+        cost = fill_dir * fill_cost * fill_event.quantity
+        self.current_holdings[fill_event.symbol_code] += cost
+        self.current_holdings['commission'] += fill_event.commission
+        self.current_holdings['cash'] -= (cost + fill_event.commission)
+        self.current_holdings['total'] -= (cost + fill_event.commission)
 
     def update_fill(self, event):
         """
