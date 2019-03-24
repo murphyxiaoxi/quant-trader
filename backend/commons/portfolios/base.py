@@ -1,6 +1,7 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
+import pandas
 import pandas as pd
 
 from backend.commons.data_handlers.abstract_handler import CommonDataHandler
@@ -9,11 +10,12 @@ from backend.commons.enums.event_type_enums import EventTypeEnum
 from backend.commons.enums.order_type_enums import OrderTypeEnum
 from backend.commons.enums.signal_type_enums import SignalTypeEnum
 from backend.commons.events.base import FillEvent, OrderEvent, SignalEvent, MarketEvent
+from backend.commons.performance import StatisticSummary, EquityCurve
 from backend.commons.performance.base_performance import create_sharpe_ratio, create_draw_downs
-# todo 完善功能 重要
 from backend.commons.portfolios.domain import Position, Holding
 
 
+# todo 完善功能 重要
 class Portfolio(object):
     """
     The Portfolio class handles the positions and market
@@ -52,7 +54,7 @@ class Portfolio(object):
 
         self._all_holdings: List[Holding] = self._init_all_holdings()
         self._current_holdings: Holding = self._init_current_holdings()
-        self._equity_curve = None
+        self._equity_curve: pandas.DataFrame = None
 
     def _init_all_positions(self) -> List[Position]:
         """
@@ -94,13 +96,14 @@ class Portfolio(object):
 
         Makes use of a MarketEvent from the events queue.
         """
-        latest_datetime = market_event.date_time()
+        previous_date_time = market_event.previous_date_time()
 
         # Update positions
         # ================
         dp = dict([(s, 0) for s in self._symbol_code_list])
-        position = Position(latest_datetime, dp)
+        position = Position(previous_date_time, dp)
 
+        # 复制previousPosition 方便后续计算
         for symbol_code in self._symbol_code_list:
             dp[symbol_code] = self._current_positions.symbol_position[symbol_code]
 
@@ -110,14 +113,16 @@ class Portfolio(object):
         # Update holdings
         # ===============
         dh = dict((k, v) for k, v in [(s, 0) for s in self._symbol_code_list])
-        holding = Holding(latest_datetime, self._current_holdings.cash, self._current_holdings.commission,
+        holding = Holding(previous_date_time, self._current_holdings.cash, self._current_holdings.commission,
                           self._current_holdings.total, dh)
 
+        # 复制previousHolding 方便后续计算
         for symbol_code in self._symbol_code_list:
             # Approximation to the real value
             market_value: float = float(
                 self._current_positions.symbol_position[symbol_code]
-                * self._data_handler.get_bar_value(symbol_code, bar_val_type_enums.BarValTypeEnum.ADJ_CLOSE)
+                * self._data_handler.get_bar_value(symbol_code, previous_date_time,
+                                                   bar_val_type_enums.BarValTypeEnum.ADJ_CLOSE)
             )
             dh[symbol_code] = market_value
             dh['total'] += market_value
@@ -128,8 +133,27 @@ class Portfolio(object):
     # ======================
     # FILL/POSITION HANDLING
     # ======================
+    def generate_order_event(self, signal_event: SignalEvent) -> Optional[OrderEvent]:
+        """
+        Acts on a SignalEvent to generate new orders
+        based on the portfolios logic.
+        """
+        if signal_event.event_type() == EventTypeEnum.SIGNAL:
+            order_event = self._generate_naive_order(signal_event)
+            return order_event
+        else:
+            return None
 
-    def update_positions_from_fill(self, fill_event: FillEvent):
+    def update_fill(self, fill_event: FillEvent):
+        """
+        Updates the portfolios current positions and holdings
+        from a FillEvent.
+        """
+        if fill_event.event_type() == EventTypeEnum.FILL:
+            self._update_positions_from_fill(fill_event)
+            self._update_holdings_from_fill(fill_event)
+
+    def _update_positions_from_fill(self, fill_event: FillEvent):
         """
         Takes a Fill object and updates the position matrix to
         reflect the new position.
@@ -147,7 +171,7 @@ class Portfolio(object):
         # Update positions list with new quantities
         self._current_positions.symbol_position[fill_event.symbol_code()] += fill_dir * fill_event.quantity
 
-    def update_holdings_from_fill(self, fill_event: FillEvent):
+    def _update_holdings_from_fill(self, fill_event: FillEvent):
         """
         Takes a Fill object and updates the holdings matrix to
         reflect the holdings value.
@@ -164,7 +188,7 @@ class Portfolio(object):
 
         # Update holdings list with new quantities
         fill_cost = self._data_handler.get_bar_value(
-            fill_event.symbol_code, bar_val_type_enums.BarValTypeEnum.ADJ_CLOSE
+            fill_event.symbol_code, fill_event.date_time(), bar_val_type_enums.BarValTypeEnum.ADJ_CLOSE
         )
         cost = fill_dir * fill_cost * fill_event.quantity
 
@@ -172,15 +196,6 @@ class Portfolio(object):
         self._current_holdings.commission += fill_event.commission
         self._current_holdings.cash -= (cost + fill_event.commission)
         self._current_holdings.total -= (cost + fill_event.commission)
-
-    def update_fill(self, fill_event: FillEvent):
-        """
-        Updates the portfolios current positions and holdings
-        from a FillEvent.
-        """
-        if fill_event.event_type() == EventTypeEnum.FILL:
-            self.update_positions_from_fill(fill_event)
-            self.update_holdings_from_fill(fill_event)
 
     def _generate_naive_order(self, signal_event: SignalEvent) -> OrderEvent:
         """
@@ -218,48 +233,51 @@ class Portfolio(object):
                                order_type_enums.DirectionTypeEnum.BUY)
         return order
 
-    def generate_order_event(self, signal_event: SignalEvent) -> Optional[OrderEvent]:
-        """
-        Acts on a SignalEvent to generate new orders
-        based on the portfolios logic.
-        """
-        if signal_event.event_type() == EventTypeEnum.SIGNAL:
-            order_event = self._generate_naive_order(signal_event)
-            return order_event
-        else:
-            return None
-
     # ========================
     # POST-BACKTEST STATISTICS
     # ========================
-
-    def create_equity_curve_data_frame(self):
-        """
-        Creates a pandas DataFrame from the all_holdings
-        list of dictionaries.
-        """
-        curve = pd.DataFrame(self._all_holdings)
-        curve.set_index('datetime', inplace=True)
-        curve['returns'] = curve['total'].pct_change()
-        curve['equity_curve'] = (1.0 + curve['returns']).cumprod()
-        self._equity_curve = curve
-
-    def output_summary_stats(self):
+    def statistic_summary(self) -> (StatisticSummary, EquityCurve):
         """
         Creates a list of summary statistics for the portfolios.
         """
+        self._create_equity_curve_data_frame()
+
         total_return = self._equity_curve['equity_curve'][-1]
         returns = self._equity_curve['returns']
         pnl = self._equity_curve['equity_curve']
 
         sharpe_ratio = create_sharpe_ratio(returns, periods=252 * 60 * 6.5)
-        draw_down, max_dd, dd_duration = create_draw_downs(pnl)
-        self._equity_curve['drawdown'] = draw_down
+        draw_down, max_drawn_down, drawn_down_duration = create_draw_downs(pnl)
+        self._equity_curve['draw_down'] = draw_down
 
-        stats = [("Total Return", "%0.2f%%" % ((total_return - 1.0) * 100.0)),
-                 ("Sharpe Ratio", "%0.2f" % sharpe_ratio),
-                 ("Max Drawdown", "%0.2f%%" % (max_dd * 100.0)),
-                 ("Drawdown Duration", "%d" % dd_duration)]
+        stats = StatisticSummary(
+            (total_return - 1.0) * 100.0,
+            sharpe_ratio,
+            max_drawn_down * 100.0,
+            drawn_down_duration
+        )
 
-        self._equity_curve.to_csv('equity.csv')
-        return stats
+        return stats, EquityCurve(self._equity_curve)
+
+    def equity_curve(self):
+        return self._equity_curve
+
+    def _create_equity_curve_data_frame(self):
+        """
+        Creates a pandas DataFrame from the all_holdings
+        list of dictionaries.
+        """
+        converted_all_holding = []
+        for holding in self._all_holdings:
+            d: Dict[str, Any] = holding.symbol_hold
+            d['date_time'] = holding.date_time
+            d['cash'] = holding.cash
+            d['total'] = holding.total
+            d['commission'] = holding.commission
+            converted_all_holding.append(d)
+
+        curve = pd.DataFrame(converted_all_holding)
+        curve.set_index('date_time', inplace=True)
+        curve['returns'] = curve['total'].pct_change()
+        curve['equity_curve'] = (1.0 + curve['returns']).cumprod()
+        self._equity_curve = curve

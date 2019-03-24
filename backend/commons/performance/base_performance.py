@@ -10,7 +10,7 @@ import pandas as pd
 
 # todo 补全指标计算
 
-def create_sharpe_ratio(returns, periods=252):
+def create_sharpe_ratio(returns, periods=252) -> float:
     """
     Create the Sharpe ratio for the strategy, based on a
     benchmark of zero (i.e. no risk-free rate information).

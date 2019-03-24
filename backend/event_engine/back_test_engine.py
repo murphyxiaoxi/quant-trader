@@ -11,6 +11,7 @@ from pandas import DataFrame
 from backend.commons.abstract_strategy import AbstractStrategy
 from backend.commons.data_handlers.abstract_handler import CommonDataHandler
 from backend.commons.enums.event_type_enums import EventTypeEnum
+from backend.commons.enums.symbol_type import SymbolTypeEnum
 from backend.commons.events.base import AbstractEvent, MarketEvent, SignalEvent, OrderEvent, FillEvent
 from backend.commons.order_execution.order_execute_handler import SimulatedOrderExecuteHandler
 from backend.commons.portfolios.base import Portfolio
@@ -25,10 +26,12 @@ class BackTestEngine(object):
     OrderExecuteHandler:FillEvent => Portfolio
     """
 
-    def __init__(self, back_test_name, symbol_code_list: List[str], initial_capital: float, start_date: datetime,
+    def __init__(self, back_test_name, symbol_type: SymbolTypeEnum, symbol_code_list: List[str], initial_capital: float,
+                 start_date: datetime,
                  data_handler: CommonDataHandler, strategy: AbstractStrategy):
         """
-        
+        :param back_test_name
+        :param symbol_type
         :param symbol_code_list: 
         :param initial_capital: 
         :param start_date: 
@@ -36,6 +39,7 @@ class BackTestEngine(object):
         :param strategy: 
         """
         self._back_test_name = back_test_name
+        self._period_type: SymbolTypeEnum = symbol_type
         self._symbol_code_list: List[str] = symbol_code_list
         self._initial_capital: float = initial_capital
         self._start_date: datetime = start_date
@@ -65,7 +69,8 @@ class BackTestEngine(object):
 
     def _init_whole_history_trade_dates(self) -> Dict[str, List[datetime]]:
         whole_history_trade_dates = dict([
-            (symbol_code, sorted(self._data_handler.get_history_trade_date(symbol_code, self._start_date), reverse=False))
+            (symbol_code,
+             sorted(self._data_handler.get_history_trade_date(symbol_code, self._start_date), reverse=False))
             for symbol_code in self._symbol_code_list
         ])
 
@@ -75,9 +80,11 @@ class BackTestEngine(object):
         init_index = 0
         for symbol_code in self._whole_history_trade_dates.keys():
             bill_date_list = self._whole_history_trade_dates[symbol_code]
+            previous_date = self._data_handler.get_previous_date(bill_date_list[init_index])
+
             self._previous_trade_date_index[symbol_code] = init_index
 
-            self._global_events_que.put(MarketEvent(symbol_code, bill_date_list[init_index]))
+            self._global_events_que.put(MarketEvent(symbol_code, bill_date_list[init_index], previous_date))
 
     def _run_back_test(self):
         """
@@ -97,26 +104,26 @@ class BackTestEngine(object):
             # Handle the events
             while True:
                 try:
-                    event: AbstractEvent = self._global_events_que.get(False)
+                    current_event: AbstractEvent = self._global_events_que.get(False)
                 except queue.Empty:
                     break
                 else:
-                    if event is None:
+                    if current_event is None:
                         continue
                     else:
-                        self._process_event(event)
+                        self._process_event(current_event)
                         # 记录前一次处理交易日Index
-                        symbol_code = event.symbol_code()
+                        symbol_code = current_event.symbol_code()
                         previous_index = self._previous_trade_date_index[symbol_code]
                         # 处理完成
                         if previous_index + 1 >= len(self._whole_history_trade_dates[symbol_code]):
                             continue
                         # 发送市场信号
                         next_date = self._whole_history_trade_dates[symbol_code][previous_index + 1]
-                        self._global_events_que.put(MarketEvent(symbol_code, next_date))
+                        self._global_events_que.put(MarketEvent(symbol_code, next_date, current_event.date_time()))
                         # 更新交易日Index
-                        self._previous_trade_date_index[event.symbol_code()] \
-                            = self._previous_trade_date_index[event.symbol_code()] + 1
+                        self._previous_trade_date_index[current_event.symbol_code()] \
+                            = self._previous_trade_date_index[current_event.symbol_code()] + 1
 
             time.sleep(self._heartbeat_time)
 
@@ -153,14 +160,13 @@ class BackTestEngine(object):
         """
         Outputs the strategy performance from the backtest.
         """
-        self._portfolio.create_equity_curve_data_frame()
+        statistic_summary, equity_curve = self._portfolio.statistic_summary()
 
         print("Creating summary stats...")
-        stats = self._portfolio.output_summary_stats()
+        print(statistic_summary)
 
         print("Creating equity curve...")
-        print(self._portfolio._equity_curve.tail(10))
-        print(stats)
+        print(equity_curve.data.tail(10))
 
         print("Signals: %s" % self._signals)
         print("Orders: %s" % self._orders)

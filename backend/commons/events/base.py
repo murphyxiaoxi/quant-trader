@@ -39,15 +39,16 @@ class MarketEvent(AbstractEvent):
     corresponding bars.
     """
 
-    def __init__(self, symbol_code: str, date_time: datetime):
+    def __init__(self, symbol_code: str, date_time: datetime, previous_date_time: datetime):
         """
         Initialises the MarketEvent.
         """
         super().__init__(symbol_code, date_time, EventTypeEnum.MARKET)
+        self.previous_date_time = previous_date_time
 
     def __str__(self) -> str:
-        return "MarketEvent(symbol_code=%s, date_time=%s, event_type=%s)" \
-               % (self.symbol_code(), self.date_time(), self.event_type())
+        return "MarketEvent(symbol_code=%s, date_time=%s, event_type=%s, previous_date_time=%s)" \
+               % (self.symbol_code(), self.date_time(), self.event_type(), self.previous_date_time)
 
 
 class SignalEvent(AbstractEvent):
