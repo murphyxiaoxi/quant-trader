@@ -29,3 +29,7 @@ class CommonDataHandler(metaclass=ABCMeta):
     @abstractmethod
     def get_latest_bar_value(self, symbol_code, bar_val_type: bar_val_type_enums.BarValTypeEnum) -> float:
         raise NotImplementedError()
+
+    @abstractmethod
+    def get_features(self, symbol_code: str, date_time: datetime) -> DataFrame:
+        raise NotImplementedError()

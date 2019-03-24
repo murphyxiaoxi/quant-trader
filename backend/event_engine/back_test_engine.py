@@ -6,6 +6,8 @@ import time
 from datetime import datetime
 from typing import List, Dict, Set, Optional
 
+from pandas import DataFrame
+
 from backend.commons.abstract_strategy import AbstractStrategy
 from backend.commons.data_handlers.abstract_handler import CommonDataHandler
 from backend.commons.enums.event_type_enums import EventTypeEnum
@@ -19,21 +21,35 @@ class BackTestEngine(object):
     # todo 完善
     """
     事件驱动型回测框架
+    process_pipeline:
+    EventEngine:MarketEvent => DataHandler:Data =>
+
     """
 
-    def __init__(self, symbol_list: List[str], initial_capital: float, start_date: str,
+    def __init__(self, symbol_code_list: List[str], initial_capital: float, start_date: str,
                  data_handler: CommonDataHandler, strategy: AbstractStrategy):
-        self.symbol_list: List[str] = symbol_list
+        """
+        
+        :param symbol_code_list: 
+        :param initial_capital: 
+        :param start_date: 
+        :param data_handler: 
+        :param strategy: 
+        """
+        self.symbol_code_list: List[str] = symbol_code_list
         self.initial_capital: float = initial_capital
         self.start_date: str = start_date
         self.data_handler: CommonDataHandler = data_handler
         self.strategy: AbstractStrategy = strategy
 
-        # self init property
+        """
+        
+        """
         self.portfolio: Portfolio = Portfolio()
         self.execution_handler: SimulatedOrderExecuteHandler = SimulatedOrderExecuteHandler()
 
         self.global_events_que = queue.Queue()
+
         self.signals = 0
         self.orders = 0
         self.fills = 0
@@ -47,7 +63,7 @@ class BackTestEngine(object):
         self.symbol_whole_bill_date: Dict[str, List[datetime]] = dict(
             [
                 (symbol_code, self.data_handler.get_symbol_whole_bill_date(symbol_code).sort(reverse=False))
-                for symbol_code in self.symbol_list
+                for symbol_code in self.symbol_code_list
             ]
         )
 
@@ -85,7 +101,18 @@ class BackTestEngine(object):
                         continue
                     else:
                         self._process_event(event)
-                        self.previous_process_date_index_map[event.symbol_code()] = self.previous_process_date_index_map[event.symbol_code] + 1
+                        # 记录前一次处理交易日Index
+                        symbol_code = event.symbol_code()
+                        previous_index = self.previous_process_date_index_map[symbol_code]
+                        # 处理完成
+                        if previous_index + 1 >= len(self.symbol_whole_bill_date[symbol_code]):
+                            continue
+                        # 发送市场信号
+                        next_date = self.symbol_whole_bill_date[symbol_code][previous_index + 1]
+                        self.global_events_que.put(MarketEvent(symbol_code, next_date))
+                        # 更新交易日Index
+                        self.previous_process_date_index_map[event.symbol_code()] \
+                            = self.previous_process_date_index_map[event.symbol_code()] + 1
 
             time.sleep(self._heartbeat_time)
 
@@ -93,7 +120,8 @@ class BackTestEngine(object):
         if event.event_type() == EventTypeEnum.MARKET:
             self.portfolio.update_time_index_for_market_event(event)
             # 计算策略信号
-            signal_event: Optional[SignalEvent] = self.strategy.calculate_signals(event)
+            features: DataFrame = self.data_handler.get_features(event.symbol_code(), event.date_time())
+            signal_event: Optional[SignalEvent] = self.strategy.calculate_signals(features, event)
             if signal_event is not None:
                 self.global_events_que.put(signal_event)
 
@@ -134,5 +162,6 @@ class BackTestEngine(object):
         """
         Simulates the backtest and outputs portfolios performance.
         """
+        self._init_first_market_events()
         self._run_back_test()
         self._output_performance()
