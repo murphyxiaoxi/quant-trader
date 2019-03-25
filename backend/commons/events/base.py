@@ -95,7 +95,6 @@ class OrderEvent(AbstractEvent):
         a quantity (integral) and its direction ('BUY' or
         'SELL').
 
-        TODO: Must handle error checking here to obtain
         rational orders (i.e. no negative quantities etc).
 
         Parameters:
@@ -105,6 +104,8 @@ class OrderEvent(AbstractEvent):
         direction - 'BUY' or 'SELL' for long or short.
         """
         super().__init__(symbol_code, date_time, EventTypeEnum.MARKET)
+        if quantity is None or quantity < 0:
+            raise ArithmeticError("quantity must >= 0")
         self.order_type: OrderTypeEnum = order_type
         self.quantity: int = quantity
         self.direction_type: order_type_enums.DirectionTypeEnum = direction_type

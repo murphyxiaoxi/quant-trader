@@ -61,17 +61,17 @@ class SimulatedOrderExecuteHandler(AbstractOrderExecuteHandler):
         Parameters:
         event - Contains an Event object with order information.
         """
-        # todo 通知交易下单
+        # 通知交易下单
         self._send_email(order_event)
         self._send_notice(order_event)
 
-        # todo 处理花费
+        # 处理花费
         if order_event.event_type == EventTypeEnum.ORDER:
             adj_close: float = data_handler.get_bar_value(order_event.symbol_code(), order_event.date_time(),
                                                           BarValTypeEnum.ADJ_CLOSE)
             fill_cost: float = float(order_event.quantity * adj_close)
 
-            commission: float = self._commission_from_guojin()
+            commission: float = self._commission_from_guojin(order_event)
 
             fill_event = FillEvent(order_event.symbol_code(), datetime.utcnow(), order_event.quantity,
                                    order_event.direction_type, fill_cost, commission, '国金证券')
