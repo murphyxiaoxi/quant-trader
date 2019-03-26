@@ -9,19 +9,17 @@ from backend.commons.enums.symbol_type import SymbolTypeEnum
 
 
 class CommonDataHandler(metaclass=ABCMeta):
-    def __init__(self, symbol_type: SymbolTypeEnum, data_frame: DataFrame, cols_name: List[str]):
+    def __init__(self, symbol_type: SymbolTypeEnum, cols_name: List[str]):
         """
 
         :param symbol_type
-        :param data_frame: pandas dataFrame
         :param cols_name: 待获取列名称
         """
         self.symbol_type = symbol_type
-        self.data_frame = data_frame
         self.cols_name: List[str] = cols_name
 
     @abstractmethod
-    def get_previous_date(self, current_date: datetime):
+    def get_previous_date_time(self, current_date: datetime) -> datetime:
         raise NotImplementedError()
 
     @abstractmethod

@@ -27,13 +27,13 @@ class BackTestEngine(object):
     """
 
     def __init__(self, back_test_name, symbol_type: SymbolTypeEnum, symbol_code_list: List[str], initial_capital: float,
-                 start_date: datetime, data_handler: CommonDataHandler, strategy: AbstractStrategy):
+                 start_date_time: datetime, data_handler: CommonDataHandler, strategy: AbstractStrategy):
         """
         :param back_test_name
         :param symbol_type
         :param symbol_code_list: 
         :param initial_capital: 
-        :param start_date: 
+        :param start_date_time: 
         :param data_handler: 
         :param strategy: 
         """
@@ -41,14 +41,14 @@ class BackTestEngine(object):
         self._symbol_type: SymbolTypeEnum = symbol_type
         self._symbol_code_list: List[str] = symbol_code_list
         self._initial_capital: float = initial_capital
-        self._start_date: datetime = start_date
+        self._start_date_time: datetime = start_date_time
         self._data_handler: CommonDataHandler = data_handler
         self._strategy: AbstractStrategy = strategy
 
         """
         
         """
-        self._portfolio: Portfolio = Portfolio(self._data_handler, self._start_date, self._symbol_code_list,
+        self._portfolio: Portfolio = Portfolio(self._data_handler, self._start_date_time, self._symbol_code_list,
                                                self._initial_capital)
         self._execution_handler: SimulatedOrderExecuteHandler = SimulatedOrderExecuteHandler()
 
@@ -69,7 +69,7 @@ class BackTestEngine(object):
     def _init_whole_history_trade_dates(self) -> Dict[str, List[datetime]]:
         whole_history_trade_dates = dict([
             (symbol_code,
-             sorted(self._data_handler.get_history_trade_date(symbol_code, self._start_date), reverse=False))
+             sorted(self._data_handler.get_history_trade_date(symbol_code, self._start_date_time), reverse=False))
             for symbol_code in self._symbol_code_list
         ])
 
@@ -79,7 +79,7 @@ class BackTestEngine(object):
         init_index = 0
         for symbol_code in self._whole_history_trade_dates.keys():
             bill_date_list = self._whole_history_trade_dates[symbol_code]
-            previous_date = self._data_handler.get_previous_date(bill_date_list[init_index])
+            previous_date = self._data_handler.get_previous_date_time(bill_date_list[init_index])
 
             self._previous_trade_date_index[symbol_code] = init_index
 

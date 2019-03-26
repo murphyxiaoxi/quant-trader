@@ -11,7 +11,7 @@ class BackTestDataHandler(CommonDataHandler):
     def __init__(self, data_frame: DataFrame, cols_name: List[str]):
         super().__init__(data_frame, cols_name)
 
-    def get_previous_date(self, current_date: datetime):
+    def get_previous_date_time(self, current_date: datetime):
         pass
 
     def get_latest_bar(self, symbol_code: str, date: str) -> DataFrame:

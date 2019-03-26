@@ -2,7 +2,7 @@ from enum import Enum
 
 
 class SignalTypeEnum(Enum):
-    LONG = "LONG"
-    SHORT = "SHORT"
-    EXIT = "EXIT"
+    UP = "UP"
+    DOWN = "DOWN"
+    HOLD = "HOLD"
 

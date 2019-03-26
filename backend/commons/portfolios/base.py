@@ -217,19 +217,19 @@ class Portfolio(object):
         cur_quantity = self._current_positions.symbol_position[symbol_code]
         order_type = OrderTypeEnum.MARKET
 
-        if signal_type == SignalTypeEnum.LONG and cur_quantity == 0:
+        if signal_type == SignalTypeEnum.UP and cur_quantity == 0:
             order = OrderEvent(symbol_code, signal_event.date_time(), order_type, mkt_quantity,
                                order_type_enums.DirectionTypeEnum.BUY)
 
-        if signal_type == SignalTypeEnum.SHORT and cur_quantity == 0:
+        if signal_type == SignalTypeEnum.DOWN and cur_quantity == 0:
             order = OrderEvent(symbol_code, signal_event.date_time(), order_type, mkt_quantity,
                                order_type_enums.DirectionTypeEnum.SELL)
 
-        if signal_type == SignalTypeEnum.EXIT and cur_quantity > 0:
+        if signal_type == SignalTypeEnum.HOLD and cur_quantity > 0:
             order = OrderEvent(symbol_code, signal_event.date_time(), order_type, abs(cur_quantity),
                                order_type_enums.DirectionTypeEnum.SELL)
 
-        if signal_type == SignalTypeEnum.EXIT and cur_quantity < 0:
+        if signal_type == SignalTypeEnum.HOLD and cur_quantity < 0:
             order = OrderEvent(symbol_code, signal_event.date_time(), order_type, abs(cur_quantity),
                                order_type_enums.DirectionTypeEnum.BUY)
         return order
