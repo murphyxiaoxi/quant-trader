@@ -32,7 +32,7 @@ class Portfolio(object):
     portfolios total across bars.
     """
 
-    def __init__(self, data_handler: CommonDataHandler, start_date: datetime, symbol_code_list: List[str],
+    def __init__(self, start_date: datetime, symbol_code_list: List[str],
                  initial_capital: float = 100000.0):
         """
         Initialises the portfolios with bars and an event queue.
@@ -45,7 +45,6 @@ class Portfolio(object):
         start_date - The start date (bar) of the portfolios.
         initial_capital - The starting capital in USD.
         """
-        self._data_handler: CommonDataHandler = data_handler
         self._symbol_code_list = symbol_code_list
         self._start_date: datetime = start_date
         self._initial_capital: float = initial_capital
@@ -89,7 +88,7 @@ class Portfolio(object):
         d = dict([(s, 0.0) for s in self._symbol_code_list])
         return Holding(self._start_date, self._initial_capital, 0.0, self._initial_capital, d)
 
-    def update_time_index_for_market_event(self, market_event: MarketEvent):
+    def update_time_index_for_market_event(self, market_event: MarketEvent, data_handler: CommonDataHandler):
         """
         Adds a new record to the positions matrix for the current
         market data bar. This reflects the PREVIOUS bar, i.e. all
@@ -122,8 +121,8 @@ class Portfolio(object):
             # Approximation to the real value
             market_value: float = float(
                 self._current_positions.symbol_position[symbol_code]
-                * self._data_handler.get_bar_value(symbol_code, previous_date_time,
-                                                   bar_val_type_enums.BarValTypeEnum.ADJ_CLOSE)
+                * data_handler.get_bar_value(symbol_code, previous_date_time,
+                                             bar_val_type_enums.BarValTypeEnum.ADJ_CLOSE)
             )
             dh[symbol_code] = market_value
             dh['total'] += market_value
@@ -145,14 +144,14 @@ class Portfolio(object):
         else:
             return None
 
-    def update_fill(self, fill_event: FillEvent):
+    def update_fill(self, fill_event: FillEvent, data_handler: CommonDataHandler):
         """
         Updates the portfolios current positions and holdings
         from a FillEvent.
         """
         if fill_event.event_type() == EventTypeEnum.FILL:
             self._update_positions_from_fill(fill_event)
-            self._update_holdings_from_fill(fill_event)
+            self._update_holdings_from_fill(fill_event, data_handler)
 
     def _update_positions_from_fill(self, fill_event: FillEvent):
         """
@@ -172,7 +171,7 @@ class Portfolio(object):
         # Update positions list with new quantities
         self._current_positions.symbol_position[fill_event.symbol_code()] += fill_dir * fill_event.quantity
 
-    def _update_holdings_from_fill(self, fill_event: FillEvent):
+    def _update_holdings_from_fill(self, fill_event: FillEvent, data_handler: CommonDataHandler):
         """
         Takes a Fill object and updates the holdings matrix to
         reflect the holdings value.
@@ -188,7 +187,7 @@ class Portfolio(object):
             fill_dir = -1
 
         # Update holdings list with new quantities
-        fill_cost = self._data_handler.get_bar_value(
+        fill_cost = data_handler.get_bar_value(
             fill_event.symbol_code, fill_event.date_time(), bar_val_type_enums.BarValTypeEnum.ADJ_CLOSE
         )
         cost = fill_dir * fill_cost * fill_event.quantity

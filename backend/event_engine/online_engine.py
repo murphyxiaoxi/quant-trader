@@ -47,7 +47,7 @@ class OnlineEngine(object):
         """
 
         """
-        self._portfolio: Portfolio = Portfolio(self._data_handler, self._start_date, self._symbol_code_list,
+        self._portfolio: Portfolio = Portfolio(self._start_date, self._symbol_code_list,
                                                self._initial_capital)
         self._execution_handler: SimulatedOrderExecuteHandler = SimulatedOrderExecuteHandler()
 
@@ -125,7 +125,7 @@ class OnlineEngine(object):
 
     def _process_event(self, event: AbstractEvent):
         if event.event_type() == EventTypeEnum.MARKET:
-            self._portfolio.update_time_index_for_market_event(event)
+            self._portfolio.update_time_index_for_market_event(event, self._data_handler)
             # 计算策略信号
             features: pandas.DataFrame = self._data_handler.get_features(event.symbol_code(), event.date_time())
             signal_event: Optional[SignalEvent] = self._strategy.calculate_signals(features, event)
@@ -146,7 +146,7 @@ class OnlineEngine(object):
 
         elif event.event_type() == EventTypeEnum.FILL:
             self._fills += 1
-            self._portfolio.update_fill(event)
+            self._portfolio.update_fill(event, self._data_handler)
 
     def _put_event_2_queue(self, event: AbstractEvent):
         if event is not None:
