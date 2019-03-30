@@ -4,7 +4,7 @@ from typing import List
 
 import pandas
 
-from data_crawler.mongo import MongoBase
+from dao.mongo import MongoBase
 from data_crawler.xueqiu.online_api import StockApiXueqiu
 
 
@@ -23,6 +23,7 @@ class StockXueqiuData:
             return_columns: List[str] = None
     ) -> pandas.DataFrame:
         """
+        获取历史数据
         默认从mongo里查询数据, 不存在的数据则从需求爬取然后存入mongo
         :param symbol:
         :param start_date_str:
