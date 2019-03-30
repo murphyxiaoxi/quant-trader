@@ -13,3 +13,4 @@ class OrderTypeEnum(Enum):
 class DirectionTypeEnum(Enum):
     BUY = "BUY"
     SELL = "SELL"
+

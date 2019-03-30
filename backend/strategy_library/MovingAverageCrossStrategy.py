@@ -54,8 +54,8 @@ class MovingAverageCrossAbstractStrategy(AbstractStrategy):
             short_df = self.data_handler.get_k_data_previous(market_event.symbol(), date, self.short_window)
             long_df = self.data_handler.get_k_data_previous(market_event.symbol(), date, self.long_window)
 
-            short_mav = short_df['close'].sum()
-            long_mav = long_df['close'].sum()
+            short_mav = short_df['close'].mean()
+            long_mav = long_df['close'].mean()
 
             if short_mav > long_mav:
                 return SignalEvent(

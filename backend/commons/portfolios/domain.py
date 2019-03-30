@@ -35,6 +35,9 @@ class PositionDO(object):
             get_from_dic(d, 'symbol_position')
         )
 
+    def __str__(self):
+        return str(self.convert_2_dict())
+
 
 class HoldingDO(object):
     def __init__(
@@ -67,6 +70,9 @@ class HoldingDO(object):
             "total": self.total,
             "symbol_hold": self.symbol_hold
         }
+
+    def __str__(self):
+        return str(self.convert_2_dict())
 
     @staticmethod
     def convert_from_dict(d: Dict[str, Any]):

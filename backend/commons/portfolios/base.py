@@ -5,6 +5,7 @@ import pandas as pd
 
 from backend.commons.data_handlers.abstract_handler import CommonDataHandler
 from backend.commons.enums import order_type_enums, bar_val_type_enums
+from backend.commons.enums.bar_val_type_enums import BarValTypeEnum
 from backend.commons.enums.date_format_enums import DateFormatStrEnum
 from backend.commons.enums.event_type_enums import EventTypeEnum
 from backend.commons.enums.order_type_enums import OrderTypeEnum
@@ -125,12 +126,12 @@ class Portfolio(object):
 
         Makes use of a MarketEvent from the events queue.
         """
-        previous_date_time = market_event.previous_date
+        current_date = market_event.date_str()
 
         # Update positions
         # ================
         dp = dict([(s, 0) for s in self._portfolio_do.symbol_list])
-        position = PositionDO(previous_date_time, dp)
+        position = PositionDO(current_date, dp)
 
         # 复制previousPosition 方便后续计算
         for symbol_code in self._portfolio_do.symbol_list:
@@ -142,7 +143,7 @@ class Portfolio(object):
         # Update holdings
         # ===============
         dh = dict((k, v) for k, v in [(s, 0) for s in self._portfolio_do.symbol_list])
-        holding = HoldingDO(previous_date_time, self._portfolio_do.current_holding.cash,
+        holding = HoldingDO(current_date, self._portfolio_do.current_holding.cash,
                             self._portfolio_do.current_holding.commission,
                             self._portfolio_do.current_holding.total, dh)
 
@@ -151,13 +152,13 @@ class Portfolio(object):
             # Approximation to the real value
             market_value: float = float(
                 self._portfolio_do.current_position.symbol_position[symbol_code]
-                * data_handler.get_bar_value(symbol_code, previous_date_time,
+                * data_handler.get_bar_value(symbol_code, market_event.previous_date,
                                              bar_val_type_enums.BarValTypeEnum.ADJ_CLOSE)
             )
             dh[symbol_code] = market_value
-            if 'total' not in dh:
-                dh['total'] = 0.0
-            dh['total'] += market_value
+
+            holding.total += market_value
+            holding.total += self._portfolio_do.current_holding.cash
 
         # Append the current holdings
         self._portfolio_do.all_holding.append(holding)
@@ -166,13 +167,13 @@ class Portfolio(object):
     # ======================
     # FILL/POSITION HANDLING
     # ======================
-    def generate_order_event(self, signal_event: SignalEvent) -> Optional[OrderEvent]:
+    def generate_order_event(self, signal_event: SignalEvent, data_handler: CommonDataHandler) -> Optional[OrderEvent]:
         """
         Acts on a SignalEvent to generate new orders
         based on the portfolios logic.
         """
         if signal_event.event_type() == EventTypeEnum.SIGNAL:
-            order_event = self._generate_naive_order(signal_event)
+            order_event = self._generate_naive_order(signal_event, data_handler)
             return order_event
         else:
             return None
@@ -185,6 +186,7 @@ class Portfolio(object):
         if fill_event.event_type() == EventTypeEnum.FILL:
             self._update_positions_from_fill(fill_event)
             self._update_holdings_from_fill(fill_event, data_handler)
+            self._update_portfolio_2_mongo()
 
     def _update_positions_from_fill(self, fill_event: FillEvent):
         """
@@ -202,8 +204,12 @@ class Portfolio(object):
             fill_dir = -1
 
         # Update positions list with new quantities
+        self._portfolio_do.current_position.date_str = fill_event.date_str()
         self._portfolio_do.current_position.symbol_position[fill_event.symbol()] += fill_dir * fill_event.quantity
-        self._update_portfolio_2_mongo()
+        all_position = self._portfolio_do.all_position
+        for p in all_position:
+            if p.date_str == fill_event.date_str():
+                p.symbol_position[fill_event.symbol()] += fill_dir * fill_event.quantity
 
     def _update_holdings_from_fill(self, fill_event: FillEvent, data_handler: CommonDataHandler):
         """
@@ -222,17 +228,24 @@ class Portfolio(object):
 
         # Update holdings list with new quantities
         fill_cost = data_handler.get_bar_value(
-            fill_event.symbol, fill_event.date_str(), bar_val_type_enums.BarValTypeEnum.ADJ_CLOSE
+            fill_event.symbol(), fill_event.date_str(), bar_val_type_enums.BarValTypeEnum.ADJ_CLOSE
         )
         cost = fill_dir * fill_cost * fill_event.quantity
 
+        self._portfolio_do.current_holding.date_str = fill_event.date_str()
         self._portfolio_do.current_holding.symbol_hold[fill_event.symbol()] += cost
         self._portfolio_do.current_holding.commission += fill_event.commission
         self._portfolio_do.current_holding.cash -= (cost + fill_event.commission)
         self._portfolio_do.current_holding.total -= (cost + fill_event.commission)
-        self._update_portfolio_2_mongo()
 
-    def _generate_naive_order(self, signal_event: SignalEvent) -> OrderEvent:
+        for h in self._portfolio_do.all_holding:
+            if h.date_str == fill_event.date_str():
+                h.symbol_hold[fill_event.symbol()] += cost
+                h.commission += fill_event.commission
+                h.cash -= (cost + fill_event.commission)
+                h.total -= (cost + fill_event.commission)
+
+    def _generate_naive_order(self, signal_event: SignalEvent, data_handler: CommonDataHandler) -> Optional[OrderEvent]:
         """
         Simply files an Order object as a constant quantity
         sizing of the signal object, without risk management or
@@ -243,29 +256,36 @@ class Portfolio(object):
         """
         order = None
 
-        symbol_code = signal_event.symbol()
+        symbol = signal_event.symbol()
         signal_type = signal_event.signal_type
         strength = signal_event.strength
 
         mkt_quantity = 100
-        cur_quantity = self._portfolio_do.current_position.symbol_position[symbol_code]
+
+        cur_quantity = self._portfolio_do.current_position.symbol_position[symbol]
+        cur_cash = self._portfolio_do.current_holding.cash
+
         order_type = OrderTypeEnum.MARKET
 
+        order = None
         if signal_type == SignalTypeEnum.UP and cur_quantity == 0:
-            order = OrderEvent(symbol_code, signal_event.date_str(), order_type, mkt_quantity,
+            price = data_handler.get_bar_value(symbol, signal_event.date_str(), BarValTypeEnum.ADJ_CLOSE)
+            quantity = int(cur_cash / (mkt_quantity * price)) * mkt_quantity
+
+            order = OrderEvent(symbol, signal_event.date_str(), order_type, quantity,
                                order_type_enums.DirectionTypeEnum.BUY)
 
-        if signal_type == SignalTypeEnum.DOWN and cur_quantity == 0:
-            order = OrderEvent(symbol_code, signal_event.date_str(), order_type, mkt_quantity,
+        elif signal_type == SignalTypeEnum.DOWN and cur_quantity > 0:
+            order = OrderEvent(symbol, signal_event.date_str(), order_type, abs(cur_quantity),
                                order_type_enums.DirectionTypeEnum.SELL)
 
-        if signal_type == SignalTypeEnum.HOLD and cur_quantity > 0:
-            order = OrderEvent(symbol_code, signal_event.date_str(), order_type, abs(cur_quantity),
+        elif signal_type == SignalTypeEnum.HOLD and cur_quantity > 0:
+            order = None
+
+        elif signal_type == SignalTypeEnum.EXIT and cur_quantity > 0:
+            order = OrderEvent(symbol, signal_event.date_str(), order_type, abs(cur_quantity),
                                order_type_enums.DirectionTypeEnum.SELL)
 
-        if signal_type == SignalTypeEnum.HOLD and cur_quantity < 0:
-            order = OrderEvent(symbol_code, signal_event.date_str(), order_type, abs(cur_quantity),
-                               order_type_enums.DirectionTypeEnum.BUY)
         return order
 
     # ========================

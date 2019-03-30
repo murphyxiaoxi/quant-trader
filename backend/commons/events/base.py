@@ -42,7 +42,7 @@ class MarketEvent(AbstractEvent):
         """
         Initialises the MarketEvent.
         """
-        super().__init__(symbol, date_str, EventTypeEnum.MARKET)
+        super(MarketEvent, self).__init__(symbol, date_str, EventTypeEnum.MARKET)
         self.previous_date = previous_date
 
     def __str__(self) -> str:
@@ -68,7 +68,7 @@ class SignalEvent(AbstractEvent):
         strength - An adjustment factor "suggestion" used to scale
             quantity at the portfolios level. Useful for pairs strategies.
         """
-        super().__init__(symbol, date_str, EventTypeEnum.SIGNAL)
+        super(SignalEvent, self).__init__(symbol, date_str, EventTypeEnum.SIGNAL)
         self.strategy_id: int = strategy_id
         self.signal_type: SignalTypeEnum = signal_type
         self.strength = strength
@@ -102,7 +102,7 @@ class OrderEvent(AbstractEvent):
         quantity - Non-negative integer for quantity.
         direction - 'BUY' or 'SELL' for long or short.
         """
-        super().__init__(symbol, date_str, EventTypeEnum.ORDER)
+        super(OrderEvent, self).__init__(symbol, date_str, EventTypeEnum.ORDER)
         if quantity is None or quantity < 0:
             raise ArithmeticError("quantity must >= 0")
         self.order_type: OrderTypeEnum = order_type
@@ -110,7 +110,7 @@ class OrderEvent(AbstractEvent):
         self.direction_type: order_type_enums.DirectionTypeEnum = direction_type
 
     def __str__(self) -> str:
-        return "SignalEvent(symbol_code=%s, date_time=%s, event_type=%s, order_type=%s, quantity=%s" \
+        return "OrderEvent(symbol_code=%s, date_time=%s, event_type=%s, order_type=%s, quantity=%s" \
                ",direction_type=%s)" \
                % (self.symbol(), self.date_str(), self.event_type(), self.order_type, self.quantity,
                   self.direction_type)
@@ -154,7 +154,7 @@ class FillEvent(AbstractEvent):
         :param commission 佣金
         :param exchanger - The exchange where the order was filled. 交易所名称
         """
-        super().__init__(symbol, date_str, EventTypeEnum.FILL)
+        super(FillEvent, self).__init__(symbol, date_str, EventTypeEnum.FILL)
         self.quantity: int = quantity
         self.direction_type: order_type_enums.DirectionTypeEnum = direction_type
         self.fill_cost: float = fill_cost
@@ -162,7 +162,7 @@ class FillEvent(AbstractEvent):
         self.exchanger: str = exchanger
 
     def __str__(self) -> str:
-        return "SignalEvent(symbol_code=%s, date_time=%s, event_type=%s, quantity=%s, direction_type=%s" \
+        return "FillEvent(symbol_code=%s, date_time=%s, event_type=%s, quantity=%s, direction_type=%s" \
                ",fill_cost=%s, commission=%s, exchanger=%s)" \
                % (self.symbol(), self.date_str(), self.event_type(), self.quantity, self.direction_type,
                   self.fill_cost, self.commission, self.exchanger)

@@ -9,7 +9,7 @@ from backend.commons.enums.symbol_type import SymbolTypeEnum
 
 class OnlineDataHandler(CommonDataHandler):
     def __int__(self, symbol_type: SymbolTypeEnum, cols_name: List[str]):
-        super().__init__(symbol_type, cols_name)
+        super(OnlineDataHandler, self).__int__(symbol_type, cols_name)
 
     def get_previous_date(self, symbol: str, current_date_str: str) -> str:
         pass

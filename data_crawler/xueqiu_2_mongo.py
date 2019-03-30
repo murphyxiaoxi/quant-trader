@@ -59,7 +59,8 @@ class StockXueqiuData:
 
         parsed_data = [self._parse(record, return_columns) for record in records]
         result_df = pandas.DataFrame(data=parsed_data, columns=return_columns)
-        return result_df
+        result_df.set_index(['date'], inplace=True)
+        return result_df.sort_index(ascending=True)
 
     @staticmethod
     def _parse(

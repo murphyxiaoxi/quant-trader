@@ -62,18 +62,17 @@ class SimulatedOrderExecuteHandler(AbstractOrderExecuteHandler):
         event - Contains an Event object with order information.
         """
         # 通知交易下单
-        self._send_email(order_event)
         self._send_notice(order_event)
 
         # 处理花费
-        if order_event.event_type == EventTypeEnum.ORDER:
+        if order_event.event_type() == EventTypeEnum.ORDER:
             adj_close: float = data_handler.get_bar_value(order_event.symbol(), order_event.date_str(),
                                                           BarValTypeEnum.ADJ_CLOSE)
             fill_cost: float = float(order_event.quantity * adj_close)
 
             commission: float = self._commission_from_guojin(order_event)
 
-            fill_event = FillEvent(order_event.symbol(), datetime.utcnow(), order_event.quantity,
+            fill_event = FillEvent(order_event.symbol(), order_event.date_str(), order_event.quantity,
                                    order_event.direction_type, fill_cost, commission, '国金证券')
             return fill_event
 
@@ -83,15 +82,10 @@ class SimulatedOrderExecuteHandler(AbstractOrderExecuteHandler):
     @staticmethod
     def _commission_from_guojin(order_event: OrderEvent) -> float:
         # todo
-        return order_event.quantity * 0.0
+        return order_event.quantity * 0.0025
 
     def _fill_cost(self) -> float:
         raise NotImplementedError()
-
-    @staticmethod
-    def _send_email(order_event: OrderEvent):
-        print("交易通知:%s" % order_event)
-        # todo
 
     @staticmethod
     def _send_notice(order_event: OrderEvent):

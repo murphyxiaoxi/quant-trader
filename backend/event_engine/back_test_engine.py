@@ -78,7 +78,7 @@ class BackTestEngine(object):
         self._orders = 0
         self._fills = 0
         self._num_strategies = 1
-        self._heartbeat_time = 0.5  # 0.5s
+        self._heartbeat_time = 0.1  # 0.1s
 
         # map(symbol_code -> previous_processed_date_index)
         # 前一次处理的历史交易日期Index
@@ -96,7 +96,7 @@ class BackTestEngine(object):
         return whole_history_trade_dates
 
     def _init_first_market_events(self):
-        init_index = 0
+        init_index = 1
         for symbol_code in self._whole_history_trade_dates.keys():
             bill_date_list = self._whole_history_trade_dates[symbol_code]
             previous_date = self._data_handler.get_previous_date(symbol_code, bill_date_list[init_index])
@@ -123,7 +123,7 @@ class BackTestEngine(object):
             # Handle the events
             while True:
                 try:
-                    current_event: AbstractEvent = self._global_events_que.get(False)
+                    current_event: MarketEvent = self._global_events_que.get(False)
                 except queue.Empty:
                     break
                 else:
@@ -156,29 +156,31 @@ class BackTestEngine(object):
             if count >= len(self._previous_trade_date_index.keys()):
                 break
 
-    def _process_event(self, event: AbstractEvent):
-        if event.event_type() == EventTypeEnum.MARKET:
-            self._portfolio.update_time_index_for_market_event(event, self._data_handler)
-            # 计算策略信号
-            signal_event: Optional[SignalEvent] = self._strategy.calculate_signals(event)
+    def _process_event(self, event: MarketEvent):
+        if event.event_type() != EventTypeEnum.MARKET:
+            return
 
-            self._put_event_2_queue(signal_event)
+        self._portfolio.update_time_index_for_market_event(event, self._data_handler)
+        # 计算策略信号
+        signal_event: Optional[SignalEvent] = self._strategy.calculate_signals(event)
 
-        elif event.event_type() == EventTypeEnum.SIGNAL:
-            self._signals += 1
-            order_event: Optional[OrderEvent] = self._portfolio.generate_order_event(event)
+        if signal_event is None:
+            return
 
-            self._put_event_2_queue(order_event)
+        self._signals += 1
+        order_event: Optional[OrderEvent] = self._portfolio.generate_order_event(signal_event, self._data_handler)
 
-        elif event.event_type() == EventTypeEnum.ORDER:
-            self._orders += 1
-            fill_event: Optional[FillEvent] = self._execution_handler.execute_order(self._data_handler, event)
+        if order_event is None:
+            return
 
-            self._put_event_2_queue(fill_event)
+        self._orders += 1
+        fill_event: Optional[FillEvent] = self._execution_handler.execute_order(self._data_handler, order_event)
 
-        elif event.event_type() == EventTypeEnum.FILL:
-            self._fills += 1
-            self._portfolio.update_fill(event, self._data_handler)
+        if fill_event is None:
+            return
+
+        self._fills += 1
+        self._portfolio.update_fill(fill_event, self._data_handler)
 
     def _put_event_2_queue(self, event: AbstractEvent):
         if event is not None:
@@ -191,7 +193,8 @@ class BackTestEngine(object):
         statistic_summary, equity_curve = self._portfolio.statistic_summary(self._symbol_type)
 
         print("Creating summary stats...")
-        print(statistic_summary)
+        print(statistic_summary.total_return, statistic_summary.sharpe_ratio, statistic_summary.drawn_down_duration,
+              statistic_summary.max_drawn_down)
 
         print("Creating equity curve...")
         print(equity_curve.data.tail(10))
@@ -199,6 +202,7 @@ class BackTestEngine(object):
         print("Signals: %s" % self._signals)
         print("Orders: %s" % self._orders)
         print("Fills: %s" % self._fills)
+        print("")
 
     def simulate_trading(self):
         """
