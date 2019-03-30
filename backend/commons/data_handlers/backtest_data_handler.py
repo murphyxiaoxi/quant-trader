@@ -1,35 +1,40 @@
-from datetime import datetime
-from typing import List
-
+from typing import List, Optional
+from datetime import datetime as date_time_type
 from pandas import DataFrame
 
 from backend.commons.data_handlers.abstract_handler import CommonDataHandler
 from backend.commons.enums.bar_val_type_enums import BarValTypeEnum
+from backend.commons.enums.symbol_type import SymbolTypeEnum
+from data_crawler.xueqiu_2_mongo import StockXueqiuData
 
 
 class BackTestDataHandler(CommonDataHandler):
-    def __init__(self, cols_name: List[str]):
-        super().__init__(cols_name)
+    def __init__(self, symbol_type: SymbolTypeEnum, cols_name: List[str]):
+        super().__init__(symbol_type, cols_name)
+        self._stock_xueqiu_data = StockXueqiuData()
 
-    def get_previous_date_time(self, current_date: datetime):
-        pass
+    def get_previous_date(self, symbol: str, current_date_str: str) -> Optional[str]:
+        data = self._stock_xueqiu_data.get_his_k_data(symbol, '2000-01-01', current_date_str)
+        dates = sorted(data['date'], reverse=True)
+        for d in dates:
+            if d < current_date_str:
+                return d
+        return None
 
-    def get_latest_bar(self, symbol_code: str, date: str) -> DataFrame:
-        """
-        :param symbol_code:
-        :param date: format -> 2018-09-20
-        :return:
-        """
-        raise NotImplementedError()
+    def get_history_trade_date(self, symbol, min_date_str: str) -> List[str]:
+        end_date = date_time_type.now().strftime('%Y-%m-%d')
+        data = self._stock_xueqiu_data.get_his_k_data(symbol, min_date_str, end_date)
+        return sorted(data['date'], reverse=False)
 
-    def get_history_trade_date(self, symbol_code, min_date_time: datetime) -> List[datetime]:
-        pass
+    def get_bar(self, symbol: str, current_date_str: str) -> DataFrame:
+        return self._stock_xueqiu_data.get_his_k_data(symbol, current_date_str, current_date_str)
 
-    def get_bar(self, symbol_code: str, date_time: datetime) -> DataFrame:
-        pass
+    def get_bar_value(self, symbol, current_date_str: str, bar_val_type: BarValTypeEnum) -> float:
+        tmp = self._stock_xueqiu_data.get_his_k_data(symbol, current_date_str, current_date_str)
+        return tmp['close'][0]
 
-    def get_bar_value(self, symbol_code, date_time: datetime, bar_val_type: BarValTypeEnum) -> float:
-        pass
+    def get_features(self, symbol: str, current_date_str: str) -> DataFrame:
+        return self._stock_xueqiu_data.get_his_k_data(symbol, current_date_str, current_date_str)
 
-    def get_features(self, symbol_code: str, date_time: datetime) -> DataFrame:
-        pass
+    def get_k_data_previous(self, symbol: str, current_date_str: str, count: int) -> DataFrame:
+        return self._stock_xueqiu_data.get_his_k_data(symbol, None, current_date_str).iloc[1:count]

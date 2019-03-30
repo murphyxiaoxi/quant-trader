@@ -1,8 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from typing import Optional
 
-from pandas import DataFrame
-
 from backend.commons.data_handlers.abstract_handler import CommonDataHandler
 from backend.commons.enums.event_type_enums import EventTypeEnum
 from backend.commons.events.base import MarketEvent, SignalEvent
@@ -22,11 +20,11 @@ class AbstractStrategy(metaclass=ABCMeta):
     since it obtains the bar tuples from a queue object.
     """
 
-    def __int__(self, data_handler: CommonDataHandler):
+    def __init__(self, data_handler: CommonDataHandler):
         self.data_handler = data_handler
 
     @abstractmethod
-    def calculate_signals(self, features: DataFrame, market_event: MarketEvent) -> Optional[SignalEvent]:
+    def calculate_signals(self, market_event: MarketEvent) -> Optional[SignalEvent]:
         """
         Provides the mechanisms to calculate the list of signals.
         """

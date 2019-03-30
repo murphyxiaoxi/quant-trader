@@ -127,7 +127,7 @@ class OnlineEngine(object):
         if event.event_type() == EventTypeEnum.MARKET:
             self._portfolio.update_time_index_for_market_event(event, self._data_handler)
             # 计算策略信号
-            features: pandas.DataFrame = self._data_handler.get_features(event.symbol_code(), event.date_time())
+            features: pandas.DataFrame = self._data_handler.get_features(event.symbol(), event.date_str())
             signal_event: Optional[SignalEvent] = self._strategy.calculate_signals(features, event)
 
             self._put_event_2_queue(signal_event)

@@ -3,6 +3,7 @@ import typing
 from typing import List
 
 import pandas
+import pymongo
 
 from dao.mongo import MongoBase
 from data_crawler.xueqiu.online_api import StockApiXueqiu
@@ -44,16 +45,20 @@ class StockXueqiuData:
                                          upsert=True)
             return tmp_df
 
+        if start_date_str is None:
+            start_date_str = ""
+        if end_date_str is None:
+            end_date_str = ""
+
         cursor = self._mongo.table.find(filter={
             "symbol": symbol,
             "date": {"$gte": start_date_str, "$lte": end_date_str}
-        }, projection={"_id": False})
+        }, projection={"_id": False}).sort('date', pymongo.ASCENDING)
 
         records = [item for item in cursor]
 
         parsed_data = [self._parse(record, return_columns) for record in records]
         result_df = pandas.DataFrame(data=parsed_data, columns=return_columns)
-        result_df.set_index(keys=['date'], inplace=True)
         return result_df
 
     @staticmethod
