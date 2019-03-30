@@ -8,8 +8,8 @@ from backend.commons.enums.bar_val_type_enums import BarValTypeEnum
 
 
 class BackTestDataHandler(CommonDataHandler):
-    def __init__(self, data_frame: DataFrame, cols_name: List[str]):
-        super().__init__(data_frame, cols_name)
+    def __init__(self, cols_name: List[str]):
+        super().__init__(cols_name)
 
     def get_previous_date_time(self, current_date: datetime):
         pass
