@@ -3,6 +3,10 @@ from typing import Dict, List, Any
 from backend.commons.enums.date_format_enums import DateFormatStrEnum
 
 
+def get_from_dic(d: Dict[str, Any], k: str):
+    return d[k] if k in d else None
+
+
 class PositionDO(object):
     def __init__(
             self,
@@ -25,15 +29,11 @@ class PositionDO(object):
         }
 
     @staticmethod
-    def convert_from_dict(dic: Dict[str, Any]):
+    def convert_from_dict(d: Dict[str, Any]):
         return PositionDO(
-            PositionDO._get(dic, 'date_str'),
-            PositionDO._get(dic, 'symbol_position')
+            get_from_dic(d, 'date_str'),
+            get_from_dic(d, 'symbol_position')
         )
-
-    @staticmethod
-    def _get(dic: Dict[str, Any], k: str):
-        return dic[k] if k in dic else None
 
 
 class HoldingDO(object):
@@ -69,18 +69,14 @@ class HoldingDO(object):
         }
 
     @staticmethod
-    def convert_from_dict(dic: Dict[str, Any]):
+    def convert_from_dict(d: Dict[str, Any]):
         return HoldingDO(
-            HoldingDO._get(dic, 'date_str'),
-            HoldingDO._get(dic, 'cash'),
-            HoldingDO._get(dic, 'commission'),
-            HoldingDO._get(dic, 'total'),
-            HoldingDO._get(dic, 'symbol_hold')
+            get_from_dic(d, 'date_str'),
+            get_from_dic(d, 'cash'),
+            get_from_dic(d, 'commission'),
+            get_from_dic(d, 'total'),
+            get_from_dic(d, 'symbol_hold')
         )
-
-    @staticmethod
-    def _get(dic: Dict[str, Any], k: str):
-        return dic[k] if k in dic else None
 
 
 class PortfolioDO(object):
@@ -148,52 +144,48 @@ class PortfolioDO(object):
         }
 
     @staticmethod
-    def convert_from_dict(dic: Dict[str, Any]):
+    def convert_from_dict(d: Dict[str, Any]):
         return PortfolioDO(
-            PortfolioDO._get(dic, 'portfolio_id'),
-            PortfolioDO._get(dic, 'name'),
-            PortfolioDO._get(dic, 'description'),
-            PortfolioDO._get(dic, 'start_date_str'),
-            DateFormatStrEnum.convert_from_value(PortfolioDO._get(dic, 'date_format')),
-            PortfolioDO._get(dic, 'symbol_list'),
-            PortfolioDO._get(dic, 'initial_capital'),
-            PortfolioDO._parse_all_position(dic),
-            PortfolioDO._parse_current_position(dic),
-            PortfolioDO._parse_all_holding(dic),
-            PortfolioDO._parse_current_holding(dic)
+            get_from_dic(d, 'portfolio_id'),
+            get_from_dic(d, 'name'),
+            get_from_dic(d, 'description'),
+            get_from_dic(d, 'start_date_str'),
+            DateFormatStrEnum.convert_from_value(get_from_dic(d, 'date_format')),
+            get_from_dic(d, 'symbol_list'),
+            get_from_dic(d, 'initial_capital'),
+            PortfolioDO._parse_all_position(d),
+            PortfolioDO._parse_current_position(d),
+            PortfolioDO._parse_all_holding(d),
+            PortfolioDO._parse_current_holding(d)
         )
 
     @staticmethod
-    def _get(dic: Dict[str, Any], k: str):
-        return dic[k] if k in dic else None
-
-    @staticmethod
-    def _parse_all_position(dic: Dict[str, Any]):
-        tmp_list = PortfolioDO._get(dic, 'all_position')
+    def _parse_all_position(d: Dict[str, Any]):
+        tmp_list = get_from_dic(d, 'all_position')
         if tmp_list is None:
             return None
         else:
             return [PositionDO.convert_from_dict(item) for item in tmp_list]
 
     @staticmethod
-    def _parse_current_position(dic:Dict[str, Any]):
-        m = PortfolioDO._get(dic, 'current_position')
+    def _parse_current_position(d: Dict[str, Any]):
+        m = get_from_dic(d, 'current_position')
         if m is None:
             return None
         else:
             return PositionDO.convert_from_dict(m)
 
     @staticmethod
-    def _parse_all_holding(dic:Dict[str, Any]):
-        tmp_list = PortfolioDO._get(dic, 'all_holding')
+    def _parse_all_holding(d: Dict[str, Any]):
+        tmp_list = get_from_dic(d, 'all_holding')
         if tmp_list is None:
             return None
         else:
             return [HoldingDO.convert_from_dict(item) for item in tmp_list]
 
     @staticmethod
-    def _parse_current_holding(dic:Dict[str, Any]):
-        m = PortfolioDO._get(dic, 'current_holding')
+    def _parse_current_holding(d: Dict[str, Any]):
+        m = get_from_dic(d, 'current_holding')
         if m is None:
             return None
         else:

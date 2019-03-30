@@ -81,7 +81,8 @@ class Portfolio(object):
         self._mongo.table.update({"portfolio_id": self._portfolio_do.portfolio_id},
                                  {"$set": self._portfolio_do.convert_2_dict()}, upsert=True)
 
-    def _init_all_positions(self, start_date_str: str, symbol_list: List[str]) -> List[PositionDO]:
+    @staticmethod
+    def _init_all_positions(start_date_str: str, symbol_list: List[str]) -> List[PositionDO]:
         """
                 Constructs the positions list using the start_date
                 to determine when the time index will begin.
@@ -89,7 +90,8 @@ class Portfolio(object):
         d = dict([(s, 0) for s in symbol_list])
         return [PositionDO(start_date_str, d)]
 
-    def _init_current_positions(self, start_date_str, symbol_list: List[str]) -> PositionDO:
+    @staticmethod
+    def _init_current_positions(start_date_str, symbol_list: List[str]) -> PositionDO:
         """
                 Constructs the positions list using the start_date
                 to determine when the time index will begin.
@@ -97,7 +99,8 @@ class Portfolio(object):
         d = dict([(s, 0) for s in symbol_list])
         return PositionDO(start_date_str, d)
 
-    def _init_all_holdings(self, start_date_str: str, init_capital: float, symbol_list: List[str]) -> List[HoldingDO]:
+    @staticmethod
+    def _init_all_holdings(start_date_str: str, init_capital: float, symbol_list: List[str]) -> List[HoldingDO]:
         """
         Constructs the holdings list using the start_date
         to determine when the time index will begin.
@@ -105,9 +108,10 @@ class Portfolio(object):
         d = dict([(s, 0.0) for s in symbol_list])
         return [HoldingDO(start_date_str, init_capital, 0.0, init_capital, d)]
 
-    def _init_current_holdings(self, start_date_str: str, init_capital: float, symbol_list: List[str]) -> HoldingDO:
+    @staticmethod
+    def _init_current_holdings(start_date_str: str, init_capital: float, symbol_list: List[str]) -> HoldingDO:
         """
-        Constructs the holdings list using the start_date
+        Constructs the holdings list using the start_dated
         to determine when the time index will begin.
         """
         d = dict([(s, 0.0) for s in symbol_list])
