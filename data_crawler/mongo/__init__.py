@@ -21,3 +21,5 @@ class MongoBase:
 
     def close(self):
         self._con.close()
+
+
