@@ -78,7 +78,7 @@ class MovingAverageCrossAbstractStrategy(AbstractStrategy):
                 return SignalEvent(
                     market_event.symbol(),
                     market_event.date_str(),
-                    SignalTypeEnum.UP,
+                    SignalTypeEnum.DOWN,
                     self.strategy_id,
                     None
                 )

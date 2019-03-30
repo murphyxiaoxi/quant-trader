@@ -132,20 +132,29 @@ class BackTestEngine(object):
                     else:
                         self._process_event(current_event)
                         # 记录前一次处理交易日Index
-                        symbol_code = current_event.symbol()
-                        previous_index = self._previous_trade_date_index[symbol_code]
-                        # 处理完成
-                        if previous_index + 1 >= len(self._whole_history_trade_dates[symbol_code]):
-                            continue
-                        # 发送市场信号
-                        next_date = self._whole_history_trade_dates[symbol_code][previous_index + 1]
-                        self._global_events_que.put(MarketEvent(symbol_code, next_date, current_event.date_str()))
-                        # 更新交易日Index
-                        self._previous_trade_date_index[current_event.symbol()] \
-                            = self._previous_trade_date_index[current_event.symbol()] + 1
+                        if current_event.event_type() == EventTypeEnum.MARKET:
+                            symbol_code = current_event.symbol()
+                            previous_index = self._previous_trade_date_index[symbol_code]
+                            # 处理完成
+                            if previous_index + 1 >= len(self._whole_history_trade_dates[symbol_code]):
+                                continue
+                            # 发送市场信号
+                            next_date = self._whole_history_trade_dates[symbol_code][previous_index + 1]
+                            self._global_events_que.put(MarketEvent(symbol_code, next_date, current_event.date_str()))
+                            # 更新交易日Index
+                            self._previous_trade_date_index[current_event.symbol()] \
+                                = self._previous_trade_date_index[current_event.symbol()] + 1
 
             time.sleep(self._heartbeat_time)
-            self._output_performance()
+
+            count = 0
+            for symbol in self._previous_trade_date_index.keys():
+                if self._previous_trade_date_index[symbol] >= len(
+                        self._whole_history_trade_dates[symbol]) - 1:
+                    count += 1
+
+            if count >= len(self._previous_trade_date_index.keys()):
+                break
 
     def _process_event(self, event: AbstractEvent):
         if event.event_type() == EventTypeEnum.MARKET:
@@ -163,7 +172,7 @@ class BackTestEngine(object):
 
         elif event.event_type() == EventTypeEnum.ORDER:
             self._orders += 1
-            fill_event: Optional[FillEvent] = self._execution_handler.execute_order(event)
+            fill_event: Optional[FillEvent] = self._execution_handler.execute_order(self._data_handler, event)
 
             self._put_event_2_queue(fill_event)
 
@@ -197,3 +206,4 @@ class BackTestEngine(object):
         """
         self._init_first_market_events()
         self._run_back_test()
+        self._output_performance()

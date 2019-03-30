@@ -15,7 +15,7 @@ if __name__ == '__main__':
     symbol_type = SymbolTypeEnum.CHINA_STOCK
     symbol_list = ['SH510300']
     initial_capital = 1000.0
-    start_date_str = '2015-01-01'
+    start_date_str = '2019-03-15'
     date_format_enum = DateFormatStrEnum.DAY_BASE
     data_handler = BackTestDataHandler(SymbolTypeEnum.CHINA_STOCK, [])
     strategy = MovingAverageCrossAbstractStrategy(1, data_handler)
@@ -33,4 +33,4 @@ if __name__ == '__main__':
         strategy
     )
     back_test_engine.simulate_trading()
-    print("量化平台已启动, 干巴爹!")
+    print("回测已完成, 干巴爹!")
