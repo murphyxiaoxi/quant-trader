@@ -90,6 +90,7 @@ class StockApiXueqiu(object):
         df['symbol'] = pandas.Series(data=[symbol for i in range(df.size)])
         df['date'] = df['timestamp'].apply(lambda ts: time.strftime("%Y-%m-%d", time.localtime(int(ts / 1000))))
         df.set_index(keys=['date'], inplace=True)
+        df['date'] = df.index
 
         return df[return_column]
 

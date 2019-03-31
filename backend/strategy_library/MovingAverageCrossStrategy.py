@@ -49,36 +49,37 @@ class MovingAverageCrossAbstractStrategy(AbstractStrategy):
         Parameters
         event - A MarketEvent object.
         """
-        if market_event.event_type() == EventTypeEnum.MARKET:
-            date: str = market_event.previous_date
-            short_df = self.data_handler.get_k_data_previous(market_event.symbol(), date, self.short_window)
-            long_df = self.data_handler.get_k_data_previous(market_event.symbol(), date, self.long_window)
+        if market_event.event_type() != EventTypeEnum.MARKET:
+            return None
 
-            short_mav = short_df['close'].mean()
-            long_mav = long_df['close'].mean()
+        date: str = market_event.previous_date
+        short_df = self.data_handler.get_k_data_previous(market_event.symbol(), date, self.short_window)
+        long_df = self.data_handler.get_k_data_previous(market_event.symbol(), date, self.long_window)
 
-            if short_mav > long_mav:
-                return SignalEvent(
-                    market_event.symbol(),
-                    market_event.date_str(),
-                    SignalTypeEnum.UP,
-                    self.strategy_id,
-                    None
-                )
+        short_mav = short_df['close'].mean()
+        long_mav = long_df['close'].mean()
+        if short_mav > long_mav:
+            return SignalEvent(
+                market_event.symbol(),
+                market_event.date_str(),
+                SignalTypeEnum.UP,
+                self.strategy_id,
+                None
+            )
 
-            elif short_mav == long_mav:
-                return SignalEvent(
-                    market_event.symbol(),
-                    market_event.date_str(),
-                    SignalTypeEnum.HOLD,
-                    self.strategy_id,
-                    None
-                )
-            else:
-                return SignalEvent(
-                    market_event.symbol(),
-                    market_event.date_str(),
-                    SignalTypeEnum.DOWN,
-                    self.strategy_id,
-                    None
-                )
+        elif short_mav == long_mav:
+            return SignalEvent(
+                market_event.symbol(),
+                market_event.date_str(),
+                SignalTypeEnum.HOLD,
+                self.strategy_id,
+                None
+            )
+        else:
+            return SignalEvent(
+                market_event.symbol(),
+                market_event.date_str(),
+                SignalTypeEnum.DOWN,
+                self.strategy_id,
+                None
+            )

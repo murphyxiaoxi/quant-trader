@@ -152,7 +152,7 @@ class Portfolio(object):
             # Approximation to the real value
             market_value: float = float(
                 self._portfolio_do.current_position.symbol_position[symbol_code]
-                * data_handler.get_bar_value(symbol_code, market_event.previous_date,
+                * data_handler.get_bar_value(symbol_code, market_event.date_str(),
                                              bar_val_type_enums.BarValTypeEnum.ADJ_CLOSE)
             )
             dh[symbol_code] = market_value

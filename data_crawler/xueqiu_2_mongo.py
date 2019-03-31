@@ -77,10 +77,17 @@ class StockXueqiuData:
         return [get(dict_obj, k) for k in return_column]
 
 
-# dicts = {'one': [1, 2, 3], 'two': [2, 3, 4], 'three': [3, 4, 5]}
-# df = pd.DataFrame(dicts)
-# mongo.table.insert(json.loads(df.to_json(orient='records')))
-if __name__ == '__main__':
+def syn_data_2_mongo(symbol_list: List[str]):
     stock = StockXueqiuData()
-    df = stock.get_his_k_data("SH510300", '2000-01-01', '2019-03-15', force_update=False)
-    print(df)
+    for s in symbol_list:
+        stock.get_his_k_data(s, '2000-01-01', '2019-03-15', force_update=True)
+
+
+def load_data_2_csv_file(symbol_list: List[str], start_date: str, end_date: str, file_path_suffix: str):
+    stock_data = StockXueqiuData()
+    for s in symbol_list:
+        df = stock_data.get_his_k_data(s, start_date, end_date, force_update=False)
+
+        file_path = s + file_path_suffix
+        df.to_csv(file_path, mode='w')
+
