@@ -5,7 +5,7 @@ from typing import List
 import pandas
 import pymongo
 
-from dao.mongo import MongoBase
+from dao.mongo_base import MongoBase
 from data_crawler.xueqiu.online_api import StockApiXueqiu
 
 
@@ -90,4 +90,3 @@ def load_data_2_csv_file(symbol_list: List[str], start_date: str, end_date: str,
 
         file_path = s + file_path_suffix
         df.to_csv(file_path, mode='w')
-

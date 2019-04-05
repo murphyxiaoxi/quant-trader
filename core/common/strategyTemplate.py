@@ -1,16 +1,10 @@
 import abc
 
-from core.common.default_logger import DefaultLogHandler
-from core.common.event import MarketEvent
+from core.common.event import MarketEvent, OrderEvent
 
 
 class StrategyTemplate(metaclass=abc.ABCMeta):
-    def __init__(self, main_engine, back_test: bool, log_handler=None):
-        self.main_engine = main_engine
-        self.clock_engine = main_engine.clock_engine
-        self.back_test = back_test
-        # 优先使用自定义 log 句柄, 否则使用主引擎日志句柄
-        self.logger = self.log_handler() or log_handler
+    def __init__(self):
         self.init()
 
     @abc.abstractmethod
@@ -23,7 +17,7 @@ class StrategyTemplate(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def strategy(self, event: MarketEvent):
+    def strategy(self, event: MarketEvent) -> OrderEvent:
         """:param event event.data 为所有股票的信息，结构如下
         {'162411':
         {'ask1': '0.493',
@@ -60,23 +54,4 @@ class StrategyTemplate(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     def run(self, event):
-        self.strategy(event)
-
-    @abc.abstractmethod
-    def clock(self, event):
-        raise NotImplementedError()
-
-    def log_handler(self):
-        """
-        优先使用在此自定义 log 句柄, 否则返回None, 并使用主引擎日志句柄
-        :return: log_handler or None
-        """
-        return DefaultLogHandler(self.name(), log_type='stdout', filepath=self.name() + '.log')
-
-    @abc.abstractmethod
-    def shutdown(self):
-        """
-        关闭进程前调用该函数
-        :return:
-        """
-        raise NotImplementedError()
+        return self.strategy(event)

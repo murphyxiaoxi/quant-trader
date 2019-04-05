@@ -1,31 +1,19 @@
-import os
-import sys
+import datetime
+import logging.handlers
 
-import logbook
-from logbook import Logger, StreamHandler, FileHandler
+logger = logging.getLogger('event_engine_logger')
+logger.setLevel(logging.DEBUG)
 
-logbook.set_datetime_format('local')
+rf_handler = logging.handlers.TimedRotatingFileHandler('all.log', when='midnight', interval=1, backupCount=7,
+                                                       atTime=datetime.time(0, 0, 0, 0))
+rf_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
 
+f_handler = logging.FileHandler('error.log')
+f_handler.setLevel(logging.ERROR)
+f_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(filename)s[:%(lineno)d] - %(message)s"))
 
-class DefaultLogHandler(object):
-    """默认的 Log 类"""
+stream_handler = logging.StreamHandler()
+stream_handler.setLevel(logging.DEBUG)
 
-    def __init__(self, name='default', log_type='stdout', filepath='default.log', loglevel='DEBUG'):
-        """Log对象
-        :param name: log 名字
-        :param :logtype: 'stdout' 输出到屏幕, 'file' 输出到指定文件
-        :param :filename: log 文件名
-        :param :loglevel: 设定log等级 ['CRITICAL', 'ERROR', 'WARNING', 'NOTICE', 'INFO', 'DEBUG', 'TRACE', 'NOTSET']
-        :return log handler object
-        """
-        self.log = Logger(name)
-        if log_type == 'stdout':
-            StreamHandler(sys.stdout, level=loglevel).push_application()
-        if log_type == 'file':
-            if os.path.isdir(filepath) and not os.path.exists(filepath):
-                os.makedirs(os.path.dirname(filepath))
-            file_handler = FileHandler(filepath, level=loglevel)
-            self.log.handlers.append(file_handler)
-
-    def __getattr__(self, item, *args, **kwargs):
-        return self.log.__getattribute__(item, *args, **kwargs)
+logger.addHandler(rf_handler)
+logger.addHandler(f_handler)

@@ -1,3 +1,4 @@
+tushare
 logbook
 requests
 pymongo
