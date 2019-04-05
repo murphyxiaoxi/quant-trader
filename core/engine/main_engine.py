@@ -1,18 +1,16 @@
-import queue
 import threading
 import time
-from collections import defaultdict
 from typing import List
 
-from core.common.default_logger import logger
-
-from core.common.event import Event, EventTypeEnum
+from core.common.portfolio import Portfolio
 from core.common.strategyTemplate import StrategyTemplate
 from core.engine.market_engine import MarketEngine
 
 
 class MainEngine:
-    def __init__(self, symbols: List[str], strategy: StrategyTemplate, back_test=True, start_date=None, end_date=None):
+    def __init__(self, symbols: List[str], strategy: StrategyTemplate,
+                 init_capital: float,
+                 back_test=True, start_date=None, end_date=None):
         self.__symbols = symbols
         self.__back_test = back_test
         self.__start_date = start_date
@@ -20,6 +18,8 @@ class MainEngine:
         self.__market_engine = MarketEngine(symbols, back_test, start_date, end_date)
         self.__strategy = strategy
         self.__active = False
+        self.__portfolio = Portfolio(strategy.id(), strategy.name(), strategy.description(), symbols, init_capital,
+                                     back_test)
         self.__thread = threading.Thread(target=self._run(), name='MainEngine.__thread')
         self.init()
 
@@ -33,13 +33,7 @@ class MainEngine:
             else:
                 event = self.__market_engine.get(block=False)
                 order_event = self.__strategy.run(event)
-
-
-
-    def __process(self, event: Event):
-        if event.event_type in self.__handlers:
-            for handler in self.__handlers[event.event_type]:
-                handler(event)
+                self.__portfolio.order_process(order_event)
 
     def start(self):
         self.__active = True
@@ -47,25 +41,6 @@ class MainEngine:
 
     def stop(self):
         self.__active = False
+        statistic, equity_curve = self.__portfolio.statistic_summary()
+        print(statistic)
         self.__thread.join()
-
-    def register(self, event_type: EventTypeEnum, handler):
-        if handler not in self.__handlers[event_type]:
-            self.__handlers[event_type].append(handler)
-
-    def unregister(self, event_type: EventTypeEnum, handler):
-        """注销事件处理函数"""
-        handler_list = self.__handlers.get(event_type)
-        if handler_list is None:
-            return
-        if handler in handler_list:
-            handler_list.remove(handler)
-        if len(handler_list) == 0:
-            self.__handlers.pop(event_type)
-
-    def put(self, event: Event):
-        self.__queue.put(event)
-
-    @property
-    def queue_size(self):
-        return self.__queue.qsize()

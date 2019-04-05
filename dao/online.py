@@ -6,8 +6,22 @@ from typing import List
 
 import pandas
 import requests
+from requests.cookies import RequestsCookieJar
 
-from data_crawler.xueqiu import get_cookies
+
+def get_xueqiu_cookies() -> RequestsCookieJar:
+    headers = {
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Origin": "https://xueqiu.com",
+        "Accept-Encoding": "br, gzip, deflate",
+        "Host": "xueqiu.com",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0.3 Safari/605.1.15",
+        "Accept-Language": "en-us",
+        "Referer": "https://xueqiu.com/",
+        "Connection": "keep-alive"
+    }
+
+    return requests.get(url="https://xueqiu.com", headers=headers, timeout=30).cookies
 
 
 class StockApiXueqiu(object):
@@ -16,7 +30,7 @@ class StockApiXueqiu(object):
     """
 
     def __init__(self):
-        self._init_cookies_jar = get_cookies()
+        self._init_cookies_jar = get_xueqiu_cookies()
         self._default_indicator = ['kline']
         self.__default_column = ['symbol', 'date', "timestamp", 'volume', 'open', 'high', 'low', 'close', 'chg',
                                  'percent', 'turnoverrate', 'amount']
@@ -123,4 +137,4 @@ class StockApiXueqiu(object):
 
 if __name__ == '__main__':
     etf = StockApiXueqiu()
-    print(etf.get_his_k_data("SH510300", '2019-03-10', '2019-03-15'))
+    print(etf.get_his_k_data("SH510300", '20190310', '20190315'))

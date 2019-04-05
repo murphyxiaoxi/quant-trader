@@ -13,7 +13,15 @@ class StrategyTemplate(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
+    def id(self):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
     def name(self):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def description(self):
         raise NotImplementedError()
 
     @abc.abstractmethod
