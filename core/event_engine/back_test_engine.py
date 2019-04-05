@@ -3,19 +3,16 @@
 
 import queue
 import time
-from datetime import datetime
 from typing import List, Dict, Optional
 
-from pandas import DataFrame
-
-from backend.commons.abstract_strategy import AbstractStrategy
-from backend.commons.data_handlers.abstract_handler import CommonDataHandler
-from backend.commons.enums.date_format_enums import DateFormatStrEnum
-from backend.commons.enums.event_type_enums import EventTypeEnum
-from backend.commons.enums.symbol_type import SymbolTypeEnum
-from backend.commons.events.base import AbstractEvent, MarketEvent, SignalEvent, OrderEvent, FillEvent
-from backend.commons.order_execution.order_execute_handler import SimulatedOrderExecuteHandler
-from backend.commons.portfolios.base import Portfolio
+from core.abstract_strategy import AbstractStrategy
+from core.data_handlers.abstract_handler import CommonDataHandler
+from core.enums.date_format_enums import DateFormatStrEnum
+from core.enums.event_type_enums import EventTypeEnum
+from core.enums.symbol_type import SymbolTypeEnum
+from core.events import AbstractEvent, MarketEvent, SignalEvent, OrderEvent, FillEvent
+from core.order_execution import SimulatedOrderExecuteHandler
+from core.portfolios import Portfolio
 
 
 class BackTestEngine(object):

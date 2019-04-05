@@ -8,7 +8,7 @@ import pandas
 import pandas as pd
 
 # todo 补全指标计算
-from backend.commons.enums.symbol_type import SymbolTypeEnum
+from core.enums.symbol_type import SymbolTypeEnum
 
 
 def create_sharpe_ratio(returns, symbol_type: SymbolTypeEnum) -> float:

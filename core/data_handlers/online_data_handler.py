@@ -2,9 +2,9 @@ from typing import List
 
 from pandas import DataFrame
 
-from backend.commons.data_handlers.abstract_handler import CommonDataHandler
-from backend.commons.enums.bar_val_type_enums import BarValTypeEnum
-from backend.commons.enums.symbol_type import SymbolTypeEnum
+from core.data_handlers.abstract_handler import CommonDataHandler
+from core.enums.bar_val_type_enums import BarValTypeEnum
+from core.enums.symbol_type import SymbolTypeEnum
 
 
 class OnlineDataHandler(CommonDataHandler):

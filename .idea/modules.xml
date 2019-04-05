@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/quant_platform_personal.iml" filepath="$PROJECT_DIR$/.idea/quant_platform_personal.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/quant_platform_private.iml" filepath="$PROJECT_DIR$/.idea/quant_platform_private.iml" />
     </modules>
   </component>
 </project>

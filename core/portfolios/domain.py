@@ -1,6 +1,6 @@
 from typing import Dict, List, Any
 
-from backend.commons.enums.date_format_enums import DateFormatStrEnum
+from core.enums.date_format_enums import DateFormatStrEnum
 
 
 def get_from_dic(d: Dict[str, Any], k: str):

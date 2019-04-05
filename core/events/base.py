@@ -1,9 +1,9 @@
 from abc import ABCMeta
 
-from backend.commons.enums import order_type_enums
-from backend.commons.enums.event_type_enums import EventTypeEnum
-from backend.commons.enums.order_type_enums import OrderTypeEnum, DirectionTypeEnum
-from backend.commons.enums.signal_type_enums import SignalTypeEnum
+from core.enums import order_type_enums
+from core.enums.event_type_enums import EventTypeEnum
+from core.enums.order_type_enums import OrderTypeEnum, DirectionTypeEnum
+from core.enums.signal_type_enums import SignalTypeEnum
 
 
 class AbstractEvent(metaclass=ABCMeta):

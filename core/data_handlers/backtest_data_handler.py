@@ -2,9 +2,9 @@ from typing import List, Optional
 from datetime import datetime as date_time_type
 from pandas import DataFrame
 
-from backend.commons.data_handlers.abstract_handler import CommonDataHandler
-from backend.commons.enums.bar_val_type_enums import BarValTypeEnum
-from backend.commons.enums.symbol_type import SymbolTypeEnum
+from core.data_handlers.abstract_handler import CommonDataHandler
+from core.enums.bar_val_type_enums import BarValTypeEnum
+from core.enums.symbol_type import SymbolTypeEnum
 from data_crawler.xueqiu_2_mongo import StockXueqiuData
 
 

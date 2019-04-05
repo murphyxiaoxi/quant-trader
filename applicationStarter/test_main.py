@@ -1,8 +1,7 @@
-from backend.commons.data_handlers.backtest_data_handler import BackTestDataHandler
-from backend.commons.enums.date_format_enums import DateFormatStrEnum
-from backend.commons.enums.symbol_type import SymbolTypeEnum
-from backend.event_engine.back_test_engine import BackTestEngine
-from backend.strategy_library.MovingAverageCrossStrategy import MovingAverageCrossAbstractStrategy
+from core.data_handlers.backtest_data_handler import BackTestDataHandler
+from core.enums.date_format_enums import DateFormatStrEnum
+from core.enums.symbol_type import SymbolTypeEnum
+from core.event_engine.back_test_engine import BackTestEngine
 from ud_strategies_test.BollingCrossStrategy import BoolingCrossStrategy
 
 if __name__ == '__main__':

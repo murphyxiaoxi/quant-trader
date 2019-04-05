@@ -1,8 +1,8 @@
-from backend.commons.abstract_strategy import AbstractStrategy
-from backend.commons.data_handlers.abstract_handler import CommonDataHandler
-from backend.commons.enums.event_type_enums import EventTypeEnum
-from backend.commons.enums.signal_type_enums import SignalTypeEnum
-from backend.commons.events.base import SignalEvent, MarketEvent
+from core.abstract_strategy import AbstractStrategy
+from core.data_handlers.abstract_handler import CommonDataHandler
+from core.enums.event_type_enums import EventTypeEnum
+from core.enums.signal_type_enums import SignalTypeEnum
+from core.events import SignalEvent, MarketEvent
 
 
 class MovingAverageCrossAbstractStrategy(AbstractStrategy):
