@@ -7,11 +7,8 @@ import numpy as np
 import pandas
 import pandas as pd
 
-# todo 补全指标计算
-from core.enums.symbol_type import SymbolTypeEnum
 
-
-def create_sharpe_ratio(returns, symbol_type: SymbolTypeEnum) -> float:
+def create_sharpe_ratio(returns) -> float:
     """
     Create the Sharpe ratio for the strategy, based on a
     benchmark of zero (i.e. no risk-free rate information).
@@ -20,9 +17,8 @@ def create_sharpe_ratio(returns, symbol_type: SymbolTypeEnum) -> float:
     returns - A pandas Series representing period percentage returns.
     periods - Daily (252), Hourly (252*6.5), Minutely(252*6.5*60) etc.
     """
-    if symbol_type == SymbolTypeEnum.CHINA_STOCK:
-        periods = 252
-        return np.sqrt(periods) * (np.mean(returns)) / np.std(returns)
+    periods = 252
+    return np.sqrt(periods) * (np.mean(returns)) / np.std(returns)
 
 
 def create_draw_downs(pnl: pandas.Series) -> (pandas.Series, float, int):

@@ -3,37 +3,23 @@ from typing import List, Optional, Dict, Any
 import pandas
 import pandas as pd
 
-from core.data_handlers.abstract_handler import CommonDataHandler
+from core.data_handlers.default_handler import CommonDataHandler
 from core.enums import bar_val_type_enums, order_type_enums
 from core.enums.bar_val_type_enums import BarValTypeEnum
 from core.enums.date_format_enums import DateFormatStrEnum
-from core.enums.event_type_enums import EventTypeEnum
+from core.common.event_type_enum import EventTypeEnum
 from core.enums.order_type_enums import OrderTypeEnum
 from core.enums.signal_type_enums import SignalTypeEnum
 from core.enums.symbol_type import SymbolTypeEnum
 from core.events import FillEvent, OrderEvent, SignalEvent, MarketEvent
 from core.performance import StatisticSummary, EquityCurve
-from core.performance.base_performance import create_sharpe_ratio, create_draw_downs
+from core.common.performance import create_sharpe_ratio, create_draw_downs
 from core.portfolios import PositionDO, HoldingDO, PortfolioDO
 # todo 完善功能 重要
 from dao.mongo import MongoBase
 
 
 class Portfolio(object):
-    """
-    The Portfolio class handles the positions and market
-    value of all instruments at a resolution of a "bar",
-    i.e. secondly, minutely, 5-min, 30-min, 60 min or EOD.
-
-    The positions DataFrame stores a time-index of the
-    quantity of positions held.
-
-    The holdings DataFrame stores the cash and total market
-    holdings value of each symbol for a particular
-    time-index, as well as the percentage change in
-    portfolios total across bars.
-    """
-
     def __init__(
             self,
             portfolio_id: int,
@@ -54,15 +40,6 @@ class Portfolio(object):
         :param is_back_test:
         """
         """
-        Initialises the portfolios with bars and an event queue.
-        Also includes a starting datetime index and initial capital
-        (USD unless otherwise stated).
-
-        Parameters:
-        bars - The DataHandler object with current market data.
-        events - The Event Queue object.
-        start_date - The start date (bar) of the portfolios.
-        initial_capital - The starting capital in USD.
         """
         self._mongo = MongoBase("portfolio", "back_test" if is_back_test else "online")
         self._portfolio_do = PortfolioDO(

@@ -1,6 +1,6 @@
-from core.abstract_strategy import AbstractStrategy
-from core.data_handlers.abstract_handler import CommonDataHandler
-from core.enums.event_type_enums import EventTypeEnum
+from core.strategy import AbstractStrategy
+from core.data_handlers.default_handler import CommonDataHandler
+from core.common.event_type_enum import EventTypeEnum
 from core.enums.signal_type_enums import SignalTypeEnum
 from core.events import SignalEvent, MarketEvent
 

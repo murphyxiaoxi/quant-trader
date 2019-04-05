@@ -1,9 +1,9 @@
 from abc import abstractmethod, ABCMeta
 from typing import Optional
 
-from core.data_handlers.abstract_handler import CommonDataHandler
+from core.data_handlers.default_handler import CommonDataHandler
 from core.enums.bar_val_type_enums import BarValTypeEnum
-from core.enums.event_type_enums import EventTypeEnum
+from core.common.event_type_enum import EventTypeEnum
 from core.events import FillEvent, OrderEvent
 
 
