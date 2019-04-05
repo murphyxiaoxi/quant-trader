@@ -21,14 +21,19 @@ class MainEngine:
         self.__strategy = strategy
         self.__active = False
         self.__thread = threading.Thread(target=self._run(), name='MainEngine.__thread')
+        self.init()
+
+    def init(self):
+        self.__market_engine.run()
 
     def _run(self):
         while self.__active:
             if self.__market_engine.empty():
-                time.sleep(1)
+                time.sleep(0.2)
             else:
                 event = self.__market_engine.get(block=False)
                 order_event = self.__strategy.run(event)
+
 
 
     def __process(self, event: Event):

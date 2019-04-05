@@ -53,5 +53,5 @@ class StrategyTemplate(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError()
 
-    def run(self, event):
+    def run(self, event) -> OrderEvent:
         return self.strategy(event)
