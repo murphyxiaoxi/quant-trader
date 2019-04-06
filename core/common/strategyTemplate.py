@@ -11,7 +11,9 @@ class StrategyTemplate(metaclass=abc.ABCMeta):
                  portfolio=None,
                  back_test=True,
                  start_date=None,
-                 end_date=None):
+                 end_date=None,
+                 clock_event_queue=None,
+                 market_event_queue=None):
         """
 
         :param symbols:
@@ -26,6 +28,8 @@ class StrategyTemplate(metaclass=abc.ABCMeta):
         self.__start_date = start_date
         self.__end_date = end_date
         self.__portfolio = portfolio
+        self.__clock_event_queue = clock_event_queue
+        self.__market_event_queue = market_event_queue
         self.stock_api = StockXueqiuData()
         self.init()
 
@@ -57,6 +61,24 @@ class StrategyTemplate(metaclass=abc.ABCMeta):
     def portfolio(self, value):
         if self.__portfolio is None:
             self.__portfolio = value
+
+    @property
+    def clock_event_queue(self):
+        return self.__clock_event_queue
+
+    @clock_event_queue.setter
+    def clock_event_queue(self, value):
+        if self.__clock_event_queue is None:
+            self.__clock_event_queue = value
+
+    @property
+    def market_event_queue(self):
+        return self.__market_event_queue
+
+    @market_event_queue.setter
+    def market_event_queue(self, value):
+        if self.__market_event_queue is None:
+            self.__market_event_queue = value
 
     @abc.abstractmethod
     def init(self):

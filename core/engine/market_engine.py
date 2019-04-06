@@ -14,6 +14,7 @@ from dao.stock_data import StockXueqiuData
 class MarketEngine:
     def __init__(self, symbols: List[str], market_data_func, back_test: bool = True,
                  start_date: str = None, end_date: str = None,
+                 clock_event_queue=None,
                  market_event_queue=None):
         """
 
@@ -24,7 +25,9 @@ class MarketEngine:
         :param end_date:
         :param market_event_queue:
         """
-        self.__clock_engine = BackTestClockEngine(start_date, end_date) if back_test else OnlineClockEngine()
+        self.__clock_engine = BackTestClockEngine(start_date, end_date, clock_event_queue) \
+            if back_test else OnlineClockEngine(clock_event_queue)
+
         self.__queue = market_event_queue or queue.Queue()
         self.__stock_data_api = StockXueqiuData()
         self.__symbols = symbols
@@ -74,6 +77,10 @@ class MarketEngine:
                 event = self.__clock_engine.get()
                 if event.event_type != EventTypeEnum.CLOCK:
                     continue
+
+                # 强制退出
+                if event == 0:
+                    break
 
                 # 日期 20180101
                 current_date = event.date

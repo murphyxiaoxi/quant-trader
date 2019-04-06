@@ -16,8 +16,13 @@ class MainEngine:
         self.__start_date = strategy.start_date
         self.__end_date = strategy.end_date
 
-        self.__market_engine = MarketEngine(self.__symbols, strategy.market_data_func, self.__back_test,
-                                            self.__start_date, self.__end_date)
+        self.__market_engine = MarketEngine(self.__symbols,
+                                            strategy.market_data_func,
+                                            self.__back_test,
+                                            self.__start_date,
+                                            self.__end_date,
+                                            clock_event_queue=strategy.clock_event_queue,
+                                            market_event_queue=strategy.market_event_queue)
 
         self.__portfolio = Portfolio(strategy.id(), strategy.name(), strategy.description(),
                                      self.__symbols, self.__init_capital, self.__back_test)
@@ -60,8 +65,13 @@ class MainEngine:
             if self.__market_engine.empty():
                 time.sleep(0.2)
                 sleep_time += 0.2
+                continue
             else:
                 event = self.__market_engine.get(block=False)
+                # 强制退出
+                if event == 0:
+                    break
+
                 order_event = self.__strategy.run(event)
                 self.__portfolio.order_process(order_event)
             # 回测的话 超过60秒没有事件则认为回测结束
