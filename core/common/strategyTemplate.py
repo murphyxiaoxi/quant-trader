@@ -2,6 +2,7 @@ import abc
 from typing import List
 
 from core.common.event import MarketEvent, OrderEvent
+from dao.stock_data import StockXueqiuData
 
 
 class StrategyTemplate(metaclass=abc.ABCMeta):
@@ -18,12 +19,33 @@ class StrategyTemplate(metaclass=abc.ABCMeta):
         :param start_date:
         :param end_date:
         """
-        self.symbols = symbols
-        self.init_capital = init_capital
-        self.back_test = back_test
-        self.start_date = start_date
-        self.end_date = end_date
+        self.__symbols = symbols
+        self.__init_capital = init_capital
+        self.__back_test = back_test
+        self.__start_date = start_date
+        self.__end_date = end_date
+        self.stock_api = StockXueqiuData()
         self.init()
+
+    @property
+    def symbols(self):
+        return self.__symbols
+
+    @property
+    def init_capital(self):
+        return self.__init_capital
+
+    @property
+    def back_test(self):
+        return self.__back_test
+
+    @property
+    def start_date(self):
+        return self.__start_date
+
+    @property
+    def end_date(self):
+        return self.__end_date
 
     @abc.abstractmethod
     def init(self):
@@ -42,6 +64,7 @@ class StrategyTemplate(metaclass=abc.ABCMeta):
     def description(self):
         raise NotImplementedError()
 
+    @abc.abstractmethod
     def market_data_func(self, current_date: str):
         raise NotImplementedError()
 

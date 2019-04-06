@@ -1,4 +1,5 @@
 import queue
+import threading
 import time
 from typing import List
 
@@ -25,26 +26,52 @@ class MarketEngine:
         """
         self.__clock_engine = BackTestClockEngine(start_date, end_date) if back_test else OnlineClockEngine()
         self.__queue = market_event_queue or queue.Queue()
-        self.__active = True
         self.__stock_data_api = StockXueqiuData()
         self.__symbols = symbols
-        self.__market_data_func = market_data_func or self.__default_market_data_func
+        self.__market_data_func = market_data_func
         self.init()
+        self.__thread = threading.Thread(target=self.__run, name="MarketEngine.__thread")
+        self.__running = threading.Event()
+        self.__pause = threading.Event()
 
     def init(self):
         if self.__symbols is None or len(self.__symbols) == 0:
             raise Exception("股票列表不为空")
+        if self.__market_data_func is None:
+            raise Exception("市场数据处理函数market_data_func不可为空")
 
+    def empty(self):
+        return self.__queue.empty()
+
+    def get(self, block=False, timeout=None):
+        return self.__queue.get(block=block, timeout=timeout)
+
+    def start(self):
+        self.__running.set()
+        self.__pause.set()
+        self.__thread.start()
         self.__clock_engine.start()
 
-    def run(self):
-        while self.__active:
+    def pause(self):
+        self.__clock_engine.pause()
+        self.__pause.clear()  # 设置为False, 让线程阻塞
+
+    def resume(self):
+        self.__pause.set()  # 设置为True, 让线程停止阻塞
+        self.__clock_engine.resume()
+
+    def stop(self):
+        self.__clock_engine.stop()
+        self.__pause.set()
+        self.__running.clear()
+
+    def __run(self):
+        while self.__running.isSet():
+            self.__pause.wait()
             if self.__clock_engine.empty():
                 time.sleep(0.1)
             else:
                 event = self.__clock_engine.get()
-                if type(event) == int and event <= 0:
-                    break
                 if event.event_type != EventTypeEnum.CLOCK:
                     continue
 
@@ -53,12 +80,6 @@ class MarketEngine:
 
                 market_event = MarketEvent(self.__market_data_func(current_date))
                 self.__queue.put(market_event)
-
-    def empty(self):
-        return self.__queue.empty()
-
-    def get(self, block=False, timeout=None):
-        return self.__queue.get(block=block, timeout=timeout)
 
     def __default_market_data_func(self, date: str):
         previous_date = trade_date_util.previous_trade_date(date)
