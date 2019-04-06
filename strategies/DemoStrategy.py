@@ -26,20 +26,17 @@ class DemoStrategy(StrategyTemplate):
         return data
 
     def strategy(self, event: MarketEvent) -> OrderEvent:
-        print("市场信号:", event)
-
         price = event.data['510030']
 
-        if self.portfolio.latest_holding() is None:
-            cash = self.portfolio.init_capital
-        else:
-            cash = self.portfolio.latest_holding()['cash']
+        cash = self.portfolio.current_cash()
 
         quantity = int(cash / price)
 
         direction = {'510030': OrderTypeEnum.BUY}
         quantity = {'510030': quantity}
         price = {'510030': price}
+
+        print("下单 ", OrderEvent(event.current_date, direction, quantity, price, 0.0))
 
         return OrderEvent(event.current_date, direction, quantity, price, 0.0)
 

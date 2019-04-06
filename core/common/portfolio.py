@@ -121,6 +121,15 @@ class Portfolio(object):
 
         return document['all_holding']
 
+    def current_cash(self):
+        self.__lock.acquire()
+        document = self.__mongo.table.find_one({'strategy_id': self.strategy_id, 'strategy_name': self.strategy_name})
+        self.__lock.release()
+        if len(document['all_holding']) == 0:
+            return self.init_capital
+
+        return document['all_holding'][-1]['cash']
+
     # ======================
     # FILL/POSITION HANDLING
     # ======================
