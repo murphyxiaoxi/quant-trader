@@ -11,6 +11,7 @@ class MainEngine:
         self.__strategy = strategy
 
         self.__symbols = strategy.symbols
+        self.__init_capital = strategy.init_capital
         self.__back_test = strategy.back_test
         self.__start_date = strategy.start_date
         self.__end_date = strategy.end_date
