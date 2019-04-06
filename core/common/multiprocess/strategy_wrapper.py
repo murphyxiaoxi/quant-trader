@@ -13,7 +13,7 @@ class ProcessWrapper(object):
         """
         self.__strategy = strategy
         # 事件队列
-        self.__event_queue = mp.Queue(10000)
+        self.__market_event_queue = mp.Queue(10000)
         # 时钟队列
         self.__clock_queue = mp.Queue(10000)
         # 包装进程
@@ -24,7 +24,7 @@ class ProcessWrapper(object):
         """
         停止
         """
-        self.__event_queue.put(0)
+        self.__market_event_queue.put(0)
         self.__clock_queue.put(0)
         self.__proc.join()
 
@@ -33,7 +33,7 @@ class ProcessWrapper(object):
         推送消息
         """
         # print(event)
-        self.__event_queue.put(event)
+        self.__market_event_queue.put(event)
 
     def on_clock(self, event):
         """
@@ -47,7 +47,7 @@ class ProcessWrapper(object):
         """
         while True:
             try:
-                event = self.__event_queue.get(block=True)
+                event = self.__market_event_queue.get(block=True)
                 # 退出
                 if event == 0:
                     break

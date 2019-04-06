@@ -1,5 +1,5 @@
 import abc
-from queue import Queue
+import queue
 
 import tushare
 
@@ -7,11 +7,11 @@ from core.common.event import ClockEvent
 
 
 class ClockEngine(metaclass=abc.ABCMeta):
-    def __init__(self):
+    def __init__(self, clock_event_queue=None):
         """
         时钟引擎
         """
-        self._clock_queue = Queue()
+        self._clock_queue = clock_event_queue or queue.Queue()
         self.__active = False
 
     @abc.abstractmethod
@@ -21,7 +21,7 @@ class ClockEngine(metaclass=abc.ABCMeta):
     def empty(self):
         return self._clock_queue.empty()
 
-    def get(self):
+    def get(self) -> ClockEvent:
         return self._clock_queue.get(block=False)
 
     def start(self):
@@ -32,8 +32,8 @@ class ClockEngine(metaclass=abc.ABCMeta):
 
 
 class BackTestClockEngine(ClockEngine):
-    def __init__(self, start_date: str, end_date: str):
-        super(BackTestClockEngine, self).__init__()
+    def __init__(self, start_date: str, end_date: str, clock_event_queue=None):
+        super(BackTestClockEngine, self).__init__(clock_event_queue)
 
         self._start_date = start_date
         self._end_date = end_date
@@ -50,8 +50,8 @@ class BackTestClockEngine(ClockEngine):
 
 
 class OnlineClockEngine(ClockEngine):
-    def __init__(self):
-        super(OnlineClockEngine, self).__init__()
+    def __init__(self, clock_event_queue):
+        super(OnlineClockEngine, self).__init__(clock_event_queue)
 
     def _tick(self):
         # todo

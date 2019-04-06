@@ -1,10 +1,20 @@
 import abc
+from typing import List
 
 from core.common.event import MarketEvent, OrderEvent
 
 
 class StrategyTemplate(metaclass=abc.ABCMeta):
-    def __init__(self):
+    def __init__(self, symbols: List[str],
+                 init_capital: float,
+                 back_test=True,
+                 start_date=None,
+                 end_date=None):
+        self.symbols = symbols
+        self.init_capital = init_capital
+        self.back_test = back_test
+        self.start_date = start_date
+        self.end_date = end_date
         self.init()
 
     @abc.abstractmethod
