@@ -10,6 +10,14 @@ class StrategyTemplate(metaclass=abc.ABCMeta):
                  back_test=True,
                  start_date=None,
                  end_date=None):
+        """
+
+        :param symbols:
+        :param init_capital:
+        :param back_test:
+        :param start_date:
+        :param end_date:
+        """
         self.symbols = symbols
         self.init_capital = init_capital
         self.back_test = back_test
@@ -32,6 +40,9 @@ class StrategyTemplate(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def description(self):
+        raise NotImplementedError()
+
+    def market_data_func(self, current_date: str):
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -73,3 +84,13 @@ class StrategyTemplate(metaclass=abc.ABCMeta):
 
     def run(self, event) -> OrderEvent:
         return self.strategy(event)
+
+
+if __name__ == '__main__':
+    class Test:
+        def func(self, str):
+            return str
+
+    test = Test()
+    f = test.func
+    print(f("xiaoxi"))

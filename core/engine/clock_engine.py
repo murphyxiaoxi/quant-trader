@@ -50,7 +50,7 @@ class BackTestClockEngine(ClockEngine):
 
 
 class OnlineClockEngine(ClockEngine):
-    def __init__(self, clock_event_queue):
+    def __init__(self, clock_event_queue=None):
         super(OnlineClockEngine, self).__init__(clock_event_queue)
 
     def _tick(self):

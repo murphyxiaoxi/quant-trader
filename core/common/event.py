@@ -1,8 +1,6 @@
 import abc
-from collections import OrderedDict
 from enum import Enum, unique
-
-import pandas
+from typing import Dict
 
 
 @unique
@@ -49,25 +47,24 @@ class MarketEvent(Event):
     corresponding bars.
     """
 
-    def __init__(self, previous_data: pandas.DataFrame, current_data: pandas.DataFrame):
+    def __init__(self, data):
         """
         Initialises the MarketEvent.
         """
         super(MarketEvent, self).__init__(EventTypeEnum.MARKET)
-        self.previous_data = previous_data
-        self.current_data = current_data
+        self.data = data
 
     def __str__(self):
-        return "MarketEvent(event_type=%s,previous_data=%s,current_data=%s)" % \
-               (self.event_type, self.previous_data, self.current_data)
+        return "MarketEvent(event_type=%s,data=%s)" % \
+               (self.event_type, self.data)
 
 
 class OrderEvent(Event):
     def __init__(self,
                  date: str,
-                 direction: OrderedDict[str, OrderTypeEnum],
-                 quantity: OrderedDict[str, int],
-                 price: OrderedDict[str, float],
+                 direction: Dict[str, OrderTypeEnum],
+                 quantity: Dict[str, int],
+                 price: Dict[str, float],
                  total_commission: float):
         super(OrderEvent, self).__init__(EventTypeEnum.ORDER)
         self.date = date

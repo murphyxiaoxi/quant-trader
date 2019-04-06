@@ -6,7 +6,7 @@ import pandas
 import pymongo
 
 from dao.mongo_base import MongoBase
-from data_download.xueqiu.online_api import StockApiXueqiu
+from dao.online import StockApiXueqiu
 
 
 class StockXueqiuData:

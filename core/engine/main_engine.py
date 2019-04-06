@@ -15,7 +15,7 @@ class MainEngine:
         self.__back_test = strategy.back_test
         self.__start_date = strategy.start_date
         self.__end_date = strategy.end_date
-        self.__market_engine = MarketEngine(self.__symbols, self.__back_test, self.__start_date, self.__end_date)
+        self.__market_engine = MarketEngine(self.__symbols, strategy.market_data_func, self.__back_test, self.__start_date, self.__end_date)
 
         self.__portfolio = Portfolio(strategy.id(), strategy.name(), strategy.description(),
                                      self.__symbols, self.__init_capital, self.__back_test)
