@@ -30,6 +30,7 @@ class MainEngine:
 
     def init(self):
         self.__market_engine.start()
+        self.__strategy.portfolio = self.__portfolio
 
     def start(self):
         self.__running.set()
