@@ -45,7 +45,7 @@ class ProcessWrapper(object):
         """
         启动进程
         """
-        main_engine_thread = Thread(target=self.__run(), name="ProcessWrapper._process_clock")
+        main_engine_thread = Thread(target=self.__run(), name="ProcessWrapper._process")
         main_engine_thread.start()
 
         main_engine_thread.join()

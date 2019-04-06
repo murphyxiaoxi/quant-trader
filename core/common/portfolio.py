@@ -1,6 +1,6 @@
 import threading
-from collections import OrderedDict, defaultdict
-from typing import List, Dict
+from collections import defaultdict
+from typing import List, Dict, Any
 
 import pandas
 
@@ -36,6 +36,7 @@ class Portfolio(object):
         self.init_capital = initial_capital
         self.is_back_test = is_back_test
         self.__lock = threading.Lock()
+        self.__init_document()
 
         self._equity_curve: pandas.DataFrame = None
 
@@ -56,15 +57,12 @@ class Portfolio(object):
 
         self.__lock.release()
 
-    def __append_position(self, date: str, symbol_position: OrderedDict[str, int]):
+    def __append_position(self, date: str, last_position: Dict[str, Any]):
         self.__lock.acquire()
-        position = {
-            'date': date,
-            'symbol_position': symbol_position
-        }
+        last_position['date'] = date
 
         document = self.__mongo.table.find_one({'strategy_id': self.strategy_id, 'strategy_name': self.strategy_name})
-        document['all_position'].append(position)
+        document['all_position'].append(last_position)
 
         self.__mongo.table.update({"strategy_id": self.strategy_id, 'strategy_name': self.strategy_name},
                                   {'$set': document}, upsert=True)
@@ -84,18 +82,16 @@ class Portfolio(object):
 
     def __append_holding(self, date: str, cash: float,
                          total: float, commission: float,
-                         symbol_holding: OrderedDict[str, float]):
+                         last_holding: Dict[str, Any]):
         self.__lock.acquire()
-        holding = {
-            'date': date,
-            'cash': cash,
-            'total': total,
-            'commission': commission,
-            'symbol_holding': symbol_holding
-        }
+
+        last_holding['date'] = date
+        last_holding['cash'] = cash
+        last_holding['total'] = total
+        last_holding['commission'] = commission
 
         document = self.__mongo.table.find_one({'strategy_id': self.strategy_id, 'strategy_name': self.strategy_name})
-        document['all_holding'].append(holding)
+        document['all_holding'].append(last_holding)
 
         self.__mongo.table.update({"strategy_id": self.strategy_id, 'strategy_name': self.strategy_name},
                                   {'$set': document}, upsert=True)
@@ -133,11 +129,13 @@ class Portfolio(object):
         Acts on a SignalEvent to generate new orders
         based on the portfolios logic.
         """
+        if order_event is None:
+            return
         if order_event.event_type != EventTypeEnum.ORDER:
             return
 
-        last_position = self.latest_holding()
-        last_holding = self.latest_position()
+        last_position = self.latest_position()
+        last_holding = self.latest_holding()
 
         if last_position is None:
             last_position = {
@@ -155,7 +153,6 @@ class Portfolio(object):
             }
 
         cash = last_holding['cash']
-        total = last_holding['total']
         commission = last_holding['commission']
 
         for symbol in order_event.quantity.keys():
@@ -163,17 +160,19 @@ class Portfolio(object):
             fill_dir = self.__dir_int(direction)  # 买1 卖-1 其他0
             quantity = order_event.quantity[symbol]
 
-            last_position[symbol] += fill_dir * quantity
+            last_position['symbol_position'][symbol] += fill_dir * quantity
 
             cost = fill_dir * quantity * order_event.price[symbol]
-            last_holding[symbol] -= cost
+            last_holding['symbol_holding'][symbol] += cost
 
             cash -= cost
 
         cash -= order_event.total_commission
         # 当前持有股票市值 + 现金
-        last_holding['total'] = cash + sum([(order_event.price[symbol] * position) for symbol, position in
-                                            last_position['symbol_position']])
+        total = cash + sum([order_event.price[symbol] * position for (symbol, position) in
+                            last_position['symbol_position'].items()])
+
+        last_holding['total'] = total
 
         commission += order_event.total_commission
 

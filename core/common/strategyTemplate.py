@@ -8,7 +8,6 @@ from dao.stock_data import StockXueqiuData
 class StrategyTemplate(metaclass=abc.ABCMeta):
     def __init__(self, symbols: List[str],
                  init_capital: float,
-                 portfolio=None,
                  back_test=True,
                  start_date=None,
                  end_date=None,
@@ -27,7 +26,7 @@ class StrategyTemplate(metaclass=abc.ABCMeta):
         self.__back_test = back_test
         self.__start_date = start_date
         self.__end_date = end_date
-        self.__portfolio = portfolio
+        self.__portfolio = None
         self.__clock_event_queue = clock_event_queue
         self.__market_event_queue = market_event_queue
         self.stock_api = StockXueqiuData()

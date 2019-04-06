@@ -30,41 +30,31 @@ class MainEngine:
         self.init()
 
         self.__thread = threading.Thread(target=self.__run, name="MarketEngine.__thread")
-        self.__running = threading.Event()
-        self.__pause = threading.Event()
+        self.__active = False
 
     def init(self):
-        self.__market_engine.start()
         self.__strategy.portfolio = self.__portfolio
 
     def start(self):
-        self.__running.set()
-        self.__pause.set()
+        self.__active = True
         self.__thread.start()
         self.__market_engine.start()
 
-    def pause(self):
-        self.__market_engine.pause()
-        self.__pause.clear()  # 设置为False, 让线程阻塞
-
-    def resume(self):
-        self.__pause.set()  # 设置为True, 让线程停止阻塞
-        self.__market_engine.resume()
-
     def stop(self):
         self.__market_engine.stop()
-        self.__pause.set()
-        self.__running.clear()
+        self.__active = False
         statistic, equity_curve = self.__portfolio.statistic_summary()
         print("回测结果", statistic)
 
     def __run(self):
         sleep_time = 0.0
-        while self.__running.isSet():
-            self.__pause.wait()
+        while self.__active:
             if self.__market_engine.empty():
                 time.sleep(0.2)
                 sleep_time += 0.2
+                # 回测的话 超过60秒没有事件则认为回测结束
+                if self.__back_test and sleep_time > 60:
+                    self.stop()
                 continue
             else:
                 event = self.__market_engine.get(block=False)
@@ -74,6 +64,5 @@ class MainEngine:
 
                 order_event = self.__strategy.run(event)
                 self.__portfolio.order_process(order_event)
-            # 回测的话 超过60秒没有事件则认为回测结束
-            if self.__back_test and sleep_time > 60:
-                self.stop()
+
+        print("MainEngine stopped===")

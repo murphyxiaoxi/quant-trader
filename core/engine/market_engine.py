@@ -34,8 +34,7 @@ class MarketEngine:
         self.__market_data_func = market_data_func
         self.init()
         self.__thread = threading.Thread(target=self.__run, name="MarketEngine.__thread")
-        self.__running = threading.Event()
-        self.__pause = threading.Event()
+        self.__active = False
 
     def init(self):
         if self.__symbols is None or len(self.__symbols) == 0:
@@ -50,27 +49,17 @@ class MarketEngine:
         return self.__queue.get(block=block, timeout=timeout)
 
     def start(self):
-        self.__running.set()
-        self.__pause.set()
+        self.__active = True
         self.__thread.start()
         self.__clock_engine.start()
 
-    def pause(self):
-        self.__clock_engine.pause()
-        self.__pause.clear()  # 设置为False, 让线程阻塞
-
-    def resume(self):
-        self.__pause.set()  # 设置为True, 让线程停止阻塞
-        self.__clock_engine.resume()
-
     def stop(self):
         self.__clock_engine.stop()
-        self.__pause.set()
-        self.__running.clear()
+        self.__active = False
+        self.__thread.join()
 
     def __run(self):
-        while self.__running.isSet():
-            self.__pause.wait()
+        while self.__active:
             if self.__clock_engine.empty():
                 time.sleep(0.1)
             else:
@@ -85,8 +74,10 @@ class MarketEngine:
                 # 日期 20180101
                 current_date = event.date
 
-                market_event = MarketEvent(self.__market_data_func(current_date))
+                market_event = MarketEvent(current_date, self.__market_data_func(current_date))
                 self.__queue.put(market_event)
+
+        print("MarketEngine stopped===")
 
     def __default_market_data_func(self, date: str):
         previous_date = trade_date_util.previous_trade_date(date)

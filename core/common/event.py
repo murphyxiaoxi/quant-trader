@@ -47,16 +47,17 @@ class MarketEvent(Event):
     corresponding bars.
     """
 
-    def __init__(self, data):
+    def __init__(self, current_date, data):
         """
         Initialises the MarketEvent.
         """
         super(MarketEvent, self).__init__(EventTypeEnum.MARKET)
+        self.current_date = current_date
         self.data = data
 
     def __str__(self):
-        return "MarketEvent(event_type=%s,data=%s)" % \
-               (self.event_type, self.data)
+        return "MarketEvent(event_type=%s,current_date=%s,data=%s)" % \
+               (self.event_type, self.current_date, self.data)
 
 
 class OrderEvent(Event):
